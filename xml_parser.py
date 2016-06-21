@@ -10,7 +10,7 @@ import xml.etree.ElementTree as etree
 AuthorOf = namedtuple("AuthorOf", "title, author")
 Paper = namedtuple("Paper", "title, year, platform")
 Thesis = namedtuple("Thesis", "title, year, school")
-Book = namedtuple("Book", "title, year, publisher")
+Book = namedtuple("Book", "title, year")
 
 
 class XML_Parser(object):
@@ -102,7 +102,7 @@ class XML_Parser(object):
 						self.thesis.append(Thesis(title, year, school))
 
 					elif elem.tag in self.book_tags():
-						self.books.append(Book(title, year, publisher))
+						self.books.append(Book(title, year))
 
 					for author in authors:
 						self.authorOf.append(AuthorOf(title, author))
@@ -111,7 +111,6 @@ class XML_Parser(object):
 					year = ""
 					platform = ""
 					school = ""
-					publisher = ""
 					authors = []
 					elem.clear()
 
@@ -124,7 +123,7 @@ class XML_Parser(object):
 		df = pd.DataFrame(self.thesis, columns=["title", "year", "school"])
 		df.to_csv("Thesis.csv", index=False, encoding='utf-8')
 
-		df = pd.DataFrame(self.books, columns=["title", "year", "publisher"])
+		df = pd.DataFrame(self.books, columns=["title", "year"])
 		df.to_csv("Book.csv", index=False, encoding='utf-8')
 
 		df = pd.DataFrame(self.authorOf, columns=["title", "author"])
