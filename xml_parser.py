@@ -1,68 +1,137 @@
 import xml.dom.minidom
+import codecs
+import re
 import pandas as pd
 from collections import namedtuple
 from xml.dom.minidom import parse
+import xml.etree.ElementTree as etree
 
 
 AuthorOf = namedtuple("AuthorOf", "title, author")
 Paper = namedtuple("Paper", "title, year, platform")
+Thesis = namedtuple("Thesis", "title, year, school")
+Book = namedtuple("Book", "title, year, publisher")
 
 
 class XML_Parser(object):
-   def __init__(self):
-      self.papers = []
-      self.authorOf = []
+	def __init__(self):
+		self.papers = []
+		self.thesis = []
+		self.books = []
+		self.authorOf = []
 
-   def platform_tags(self):
-      return ["booktitle", "journal", "school"]
-     
+	def platform_tags(self):
+		return ["booktitle", "journal"]
 
-   def parse(self, fname):
-      DOMTree = xml.dom.minidom.parse(fname)
-      collection = DOMTree.documentElement
+	def school_tags(self):
+		return ["school"]
 
-      papers = set()
-      for tag in ["article", "incollection", "inproceedings", "mastersthesis", "phdthesis"]:
-         papers |= set(collection.getElementsByTagName(tag))
+	def paper_tags(self):
+		return set(["article", "incollection", "inproceedings"])
 
-      for paper in papers:
-         print "*****PAPER*****"
+	def thesis_tags(self):
+		return set(["mastersthesis", "phdthesis"])
 
-         '''
-         if paper.hasAttribute("mdate"):
-            print "mdate: %s" % paper.getAttribute("mdate")
+	def book_tags(self):
+		return set(["book"])
 
-         if paper.hasAttribute("key"):
-            print "key: %s" % paper.getAttribute("key")
-         '''
+	def pthb_tags(self):
+		return self.paper_tags() | self.thesis_tags() | self.book_tags()
 
-         title = paper.getElementsByTagName("title")[0].childNodes[0].data
-         print "title: %s" % title
 
-         year = paper.getElementsByTagName("year")[0].childNodes[0].data
-         print "year: %s" % year
+	def remove_invalid_char(self, input, output):
+		invalid_xmls = [re.compile(r'&\w\w;'), re.compile(r'&\w\w\w;'), 
+						re.compile(r'&\w\w\w\w;'), re.compile(r'&\w\w\w\w\w;'), 
+						re.compile(r'&\w\w\w\w\w\w;'), re.compile(r'&\w\w\w\w\w\w\w;'), 
+						re.compile(r'<i>'), re.compile(r'</i>'), 
+						re.compile(r'<sub>'), re.compile(r'</sub>'), 
+						re.compile(r'<sup>'), re.compile(r'</sup>')]
+		conn = open(input, 'r')
 
-         for tag in self.platform_tags():
-            if len(paper.getElementsByTagName(tag)) != 0:
-               platform = paper.getElementsByTagName(tag)[0].childNodes[0].data
-               break
-         print "platform: %s" % platform
+		new_file = open(output,'w') 
+		with open(input) as f:
+			for line in f:
+				nline = line
+				for invalid_xml in invalid_xmls:
+					nline, count = invalid_xml.subn('', nline)
+				new_file.write(nline) 
+		new_file.close()
 
-         self.papers.append(Paper(title, year, platform))
 
-         authors = paper.getElementsByTagName("author")
-         for author in authors:
-            print "author: %s" % author.childNodes[0].data
-            self.authorOf.append(AuthorOf(title, author.childNodes[0].data))
+	def iter_parse(self, fname):
+		events = ('start', 'end', 'start-ns', 'end-ns')
+		authors = []
 
-   def to_csv(self):
-      df = pd.DataFrame(self.papers, columns=["title", "year", "platform"])
-      df.to_csv("Paper.csv", index=False)
+		for event, elem in etree.iterparse(fname, events=events):
 
-      df = pd.DataFrame(self.authorOf, columns=["title", "author"])
-      df.to_csv("AuthorOf.csv", index=False)
+			if event == "start":
+				if elem.tag == "book":
+					skip = True
+
+				if elem.tag in self.pthb_tags():
+					# print "*****PAPER/Thesis/Book*****"
+					pass
+
+				elif elem.tag == "title":
+					title = elem.text
+					# print "title: %s" % title
+
+				elif elem.tag == "year":
+					year = elem.text
+					# print "year: %s" % year
+
+				elif elem.tag in self.platform_tags():
+					platform = elem.text
+					# print "platform: %s" % platform
+
+				elif elem.tag in self.school_tags():
+					school = elem.text
+					# print "school: %s" % school
+
+				elif elem.tag == "author":
+					author = elem.text
+					authors.append(author)
+					# print "author: %s" % author
+
+			if event == "end":
+				if elem.tag in self.pthb_tags():
+					if elem.tag in self.paper_tags():
+						self.papers.append(Paper(title, year, platform))
+
+					elif elem.tag in self.thesis_tags():
+						self.thesis.append(Thesis(title, year, school))
+
+					elif elem.tag in self.book_tags():
+						self.books.append(Book(title, year, publisher))
+
+					for author in authors:
+						self.authorOf.append(AuthorOf(title, author))
+
+					title = ""
+					year = ""
+					platform = ""
+					school = ""
+					publisher = ""
+					authors = []
+					elem.clear()
+
+	 
+
+	def to_csv(self):
+		df = pd.DataFrame(self.papers, columns=["title", "year", "platform"])
+		df.to_csv("Paper.csv", index=False, encoding='utf-8')
+
+		df = pd.DataFrame(self.thesis, columns=["title", "year", "school"])
+		df.to_csv("Thesis.csv", index=False, encoding='utf-8')
+
+		df = pd.DataFrame(self.books, columns=["title", "year", "publisher"])
+		df.to_csv("Book.csv", index=False, encoding='utf-8')
+
+		df = pd.DataFrame(self.authorOf, columns=["title", "author"])
+		df.to_csv("AuthorOf.csv", index=False, encoding='utf-8')
 
 
 parser = XML_Parser()
-parser.parse("dblp.xml")
+# parser.remove_invalid_char("dblp.xml", "dblp_corrected.xml")
+parser.iter_parse("dblp_corrected.xml")
 parser.to_csv()
