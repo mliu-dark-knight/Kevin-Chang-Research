@@ -131,6 +131,6 @@ class XML_Parser(object):
 
 
 parser = XML_Parser()
-# parser.remove_invalid_char("dblp.xml", "dblp_corrected.xml")
+parser.remove_invalid_char("dblp.xml", "dblp_corrected.xml")
 parser.iter_parse("dblp_corrected.xml")
 parser.to_csv()
