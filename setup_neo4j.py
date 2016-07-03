@@ -1,16 +1,8 @@
-# coding: utf-8
-
-# In[1]:
-
 import csv
 import os
 import time
 from neo4j.v1 import GraphDatabase, basic_auth
 
-
-
-
-# In[2]:
 
 driver = GraphDatabase.driver("bolt://localhost:7687", auth=basic_auth("neo4j", "WCup20140613"))
 session = driver.session()
