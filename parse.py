@@ -14,13 +14,25 @@ reload(sys)
 sys.setdefaultencoding('utf-8')
 
 
-Paper = namedtuple("Paper", "title, year, platform, label")
+Paper = namedtuple("Paper", "paperID, title, year, label")
 Researcher = namedtuple("Researcher", "name, label")
 Platform = namedtuple("Platform", "platform, label")
-AuthorOf = namedtuple("AuthorOf", "name, title, type")
-WrittenBy = namedtuple("WrittenBy", "title, name, type")
-PublishAt = namedtuple("PublishAt", "title, platform, type")
-Publishes = namedtuple("Publishes", "platform, title, type")
+AuthorOf = namedtuple("AuthorOf", "name, paperID, type")
+WrittenBy = namedtuple("WrittenBy", "paperID, name, type")
+PublishAt = namedtuple("PublishAt", "paperID, platform, type")
+Publishes = namedtuple("Publishes", "platform, paperID, type")
+
+
+papers = []
+authorof = []
+writtenby = []
+publishat = []
+publishes = []
+researchers = []
+platforms = []
+dict_researcher = set()
+dict_platform = set()
+
 
 class CustomEntity:
 	def __getitem__(self, key):
@@ -38,23 +50,32 @@ def paper_tags():
 	return set(["article", "incollection", "inproceedings"])
 
 
-def strip_quotation(input):
-	return input.strip().replace('"', '')
+def strip_comma(input):
+	return input.strip().replace(', ', '').replace(',', ' ')
 
+def valid_text(text):
+	return text != None
 
+def valid_title(text):
+	return valid_text(text) and len(text) >= 16
 
-papers = []
-authorof = []
-writtenby = []
-publishat = []
-publishes = []
-researchers = []
-platforms = []
-dict_researcher = set()
-dict_platform = set()
+def valid_name(text):
+	return valid_text(text) and len(text) >= 4
+
+def valid_platform(text):
+	return valid_text(text) and len(text) >= 2
+
+def normalize(text):
+	assert valid_text(text)
+	if text[0] != '"' and text[-1] != '"':
+		return '"' + text + '"'
+	return text
+
 
 
 def parse():
+	paper_id = 0
+
 	with open("CoAuthor.csv", "w") as f:
 		w = csv.writer(f)
 		w.writerow(["names"])
@@ -66,42 +87,46 @@ def parse():
 
 				# print "****Paper****"
 				for t in elem.findall('title'):
-					if str(t.text):
-						title = t.text
+					if valid_title(t.text):
+						title = strip_comma(t.text)
 						break
 
 				for y in elem.findall('year'):
-					if str(y.text):
+					if valid_text(y.text):
 						year = y.text
 						break
 
 				for p in elem.findall('journal') or elem.findall('booktitle'):
-					if str(p.text) and p.text != "":
-						platform = p.text
-
-						if title != "":
-							publishat.append(PublishAt(title, platform, "PublishAt"))
-							publishes.append(PublishAt(platform, title, "Publishes"))
+					if valid_platform(p.text):
+						platform = strip_comma(p.text)
 
 						if platform not in dict_platform:
 							dict_platform.add(platform)
+						
+						if valid_title(title):
+							publishat.append(PublishAt(paper_id, platform, "PublishAt"))
+							publishes.append(PublishAt(platform, paper_id, "Publishes"))
+					
 						break
 
-				if title != "":
-					papers.append(Paper(title, year, platform, "Paper"))
-
-				author = []
+				authors = []
 				for a in elem.findall('author'):
-					if str(a.text) != "":
-						if a.text not in dict_researcher:
-							dict_researcher.add(a.text)
-					 	author.append(a.text)
+					if valid_name(a.text):
+						author = a.text
+						if author not in dict_researcher:
+							dict_researcher.add(author)
+					 	authors.append(author)
 
-					 	if title != "":
-					 		authorof.append(AuthorOf(a.text, title, "AuthorOf"))
-					 		writtenby.append(WrittenBy(title, a.text, "WrittenBy"))
+					 	if valid_title(title):
+					 		authorof.append(AuthorOf(author, paper_id, "AuthorOf"))
+					 		writtenby.append(WrittenBy(paper_id, author, "WrittenBy"))
 
-				w.writerow(author)
+				w.writerow(authors)
+
+				if valid_title(title):
+					papers.append(Paper(paper_id, title, year, "Paper"))
+					paper_id += 1
+
 			elem.clear()
 	f.close()
 
@@ -111,7 +136,7 @@ Format required by neo4j
 Do not change orders, node should be inserted before inserting edges
 '''
 def to_csv():
-	df = pd.DataFrame(papers, columns = ["title:ID", "year", "platform", ":LABEL"])
+	df = pd.DataFrame(papers, columns = ["paperID:ID", "title", "year", ":LABEL"])
 	df.to_csv("Paper.csv", index = False, encoding = 'utf-8')
 
 	researchers = [Researcher(name, "Researcher") for name in dict_researcher]	
