@@ -11,7 +11,7 @@ client = pyorient.OrientDB("localhost", 2424)  # host, port
 client.connect("root", "WCup20140613")
 
 ### select to use that database
-client.db_open("summer2016", "root", "WCup20140613")
+client.db_open("summer2016", "root", "mliu60")
 
 
 client.command("create class Researcher extends V")

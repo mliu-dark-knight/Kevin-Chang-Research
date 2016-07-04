@@ -11,6 +11,7 @@ initilize =
 
 iterate =
 	"""
+	match (a)
 	with collect(distinct a) as nodes,count(a) as num_nodes
 	unwind nodes as a
 	match (a)-[r]-(b)
