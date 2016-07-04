@@ -8,7 +8,7 @@ AuthorOf = ["name", "title"]
 client = pyorient.OrientDB("localhost", 2424)  # host, port
 
 ### open a connection (username and password)
-client.connect("root", "WCup20140613")
+client.connect("root", "mliu60")
 
 ### select to use that database
 client.db_open("summer2016", "root", "mliu60")
