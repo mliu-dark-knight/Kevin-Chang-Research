@@ -105,7 +105,7 @@ def parse():
 						
 						if valid_title(title):
 							publishat.append(PublishAt(paper_id, platform, "PublishAt"))
-							publishes.append(PublishAt(platform, paper_id, "Publishes"))
+							# publishes.append(PublishAt(platform, paper_id, "Publishes"))
 					
 						break
 
@@ -119,7 +119,7 @@ def parse():
 
 					 	if valid_title(title):
 					 		authorof.append(AuthorOf(author, paper_id, "AuthorOf"))
-					 		writtenby.append(WrittenBy(paper_id, author, "WrittenBy"))
+					 		# writtenby.append(WrittenBy(paper_id, author, "WrittenBy"))
 
 				w.writerow(authors)
 
@@ -136,28 +136,28 @@ Format required by neo4j
 Do not change orders, node should be inserted before inserting edges
 '''
 def to_csv():
-	df = pd.DataFrame(papers, columns = ["paperID:ID", "title", "year", ":LABEL"])
+	df = pd.DataFrame(papers, columns = ["paperID:ID", "title", "year", "pagerank", ":LABEL"])
 	df.to_csv("Paper.csv", index = False, encoding = 'utf-8')
 
 	researchers = [Researcher(name, 0.0, "Researcher") for name in dict_researcher]	
-	df = pd.DataFrame(researchers, columns = ["name:ID", ":LABEL"])
+	df = pd.DataFrame(researchers, columns = ["name:ID", "pagerank", ":LABEL"])
 	df.to_csv("Researcher.csv", index = False, encoding = 'utf-8')
 
 	platforms = [Platform(platform, 0.0, "Platform") for platform in dict_platform]	
-	df = pd.DataFrame(platforms, columns = ["platform:ID", ":LABEL"])
+	df = pd.DataFrame(platforms, columns = ["platform:ID", "pagerank", ":LABEL"])
 	df.to_csv("Platform.csv", index = False, encoding = 'utf-8')
 
 	df = pd.DataFrame(authorof, columns = [":START_ID", ":END_ID", ":TYPE"])
 	df.to_csv("AuthorOf.csv", index = False, encoding = 'utf-8')
 
-	df = pd.DataFrame(writtenby, columns = [":START_ID", ":END_ID", ":TYPE"])
-	df.to_csv("WrittenBy.csv", index = False, encoding = 'utf-8')
+	# df = pd.DataFrame(writtenby, columns = [":START_ID", ":END_ID", ":TYPE"])
+	# df.to_csv("WrittenBy.csv", index = False, encoding = 'utf-8')
 
 	df = pd.DataFrame(publishat, columns = [":START_ID", ":END_ID", ":TYPE"])
 	df.to_csv("PublishAt.csv", index = False, encoding = 'utf-8')
 
-	df = pd.DataFrame(publishes, columns = [":START_ID", ":END_ID", ":TYPE"])
-	df.to_csv("Publishes.csv", index = False, encoding = 'utf-8')
+	# df = pd.DataFrame(publishes, columns = [":START_ID", ":END_ID", ":TYPE"])
+	# df.to_csv("Publishes.csv", index = False, encoding = 'utf-8')
 
 
 

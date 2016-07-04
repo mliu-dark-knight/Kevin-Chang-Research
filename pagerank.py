@@ -1,7 +1,7 @@
 from neo4j.v1 import GraphDatabase, basic_auth
 
 
-driver = GraphDatabase.driver("bolt://localhost:7687", auth = basic_auth("neo4j", "WCup20140613"))
+driver = GraphDatabase.driver("bolt://localhost:7687", auth = basic_auth("neo4j", "mliu60"))
 session = driver.session()
 
 initilize =
