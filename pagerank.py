@@ -6,30 +6,21 @@ session = driver.session()
 
 initilize =
 	"""
-	match (a) set a.pagerank = 0.0
+	match (node) set node.pagerank = 0.0
 	"""
 
 iterate =
 	"""
-	match (a)
-	with collect(distinct a) as nodes,count(a) as num_nodes
-	unwind nodes as a
-	match (a)-[r]-(b)
-	with a,collect(r) as rels, count(r) as num_rels,1.0/num_nodes as rank
-		unwind rels as rel
-	   	set endnode(rel).pagerank =
-			case
-				when num_rels > 0 and id(startnode(rel)) = id(a) then
-					endnode(rel).pagerank + rank/(num_rels)
-				else endnode(rel).pagerank
-			end
-		,
-		startnode(rel).pagerank =
-			case
-				when num_rels > 0 and id(endnode(rel)) = id(a) then
-					startnode(rel).pagerank + rank/(num_rels)
-				else startnode(rel).pagerank
-			end
+	match (node)
+	with collect(distinct node) as pages
+	unwind pages as dest
+		match (source)-[]-(dest)
+		with collect(distinct source) as sources, dest as dest
+		unwind sources as src
+			match (src)-[r:]->()
+			with src.pageRank / count(r) as points, dest as dest
+			with sum(points) as p, dest as dest
+			set dest.pageRank = 0.15 + 0.85 * p;
 	"""
 
 # session.run(initilize)
