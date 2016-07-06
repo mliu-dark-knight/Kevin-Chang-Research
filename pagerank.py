@@ -69,6 +69,10 @@ for x in range(num_node):
 	row[sparse_idx] = x
 	sparse_idx += 1
 
+	if x % 10000 == 0:
+		print "Query epoch %d" % (x / 10000)
+
+
 matrix = csc_matrix((data, (row, col)), shape=(num_node, num_node))
 rank = np.full((num_node, 1), 1.0 / num_node)
 print "Finish setting up page rank matrix"
@@ -77,7 +81,6 @@ print "Finish setting up page rank matrix"
 
 for i in range(num_iter):
 	rank = matrix.dot(rank)
-	print rank
 print "Finish iteration"
 
 
