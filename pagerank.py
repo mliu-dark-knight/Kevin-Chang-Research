@@ -1,11 +1,15 @@
 from neo4j.v1 import GraphDatabase, basic_auth
 import numpy as np
 from scipy.sparse import csc_matrix
-from scipy.sparse.linalg import spsolve
 
 
-# driver = GraphDatabase.driver("bolt://localhost:7687", auth = basic_auth("neo4j", "mliu60"))
-# session = driver.session()
+prob_stay = 0.1
+out = 1.0 - prob_stay
+num_iter = 32
+
+
+driver = GraphDatabase.driver("bolt://localhost", auth = basic_auth("neo4j", "mliu60"))
+session = driver.session()
 
 initilize = """
 			match (node) set node.pagerank = 0.0
@@ -26,17 +30,60 @@ iterate = """
 
 
 
-row = np.random.randint(5033098, size = 25185978)
-col = np.random.randint(5033098, size = 25185978)
-data = np.random.randint(5033098, size = 25185978)
-matrix = csc_matrix((data, (row, col)), shape=(5033098, 5033098))
+num_node = session.run("match (n) return count(*) as count").single()['count']
+num_edge = session.run("match ()-[r]-() return count(r) as count").single()['count']
+print "%d nodes, %d edges" % (num_node, num_edge)
 
-initial = np.full((5033098, 1), 1.0 / 5033098.0)
+row = np.empty([num_node + num_edge], dtype = int)
+col = np.empty([num_node + num_edge], dtype = int)
+data = np.empty([num_node + num_edge], dtype = float)
 
-result = matrix.dot(initial)
 
-print result
+sparse_idx = 0
+for x in range(num_node):
 
-# result = spsolve(matrix, np.random.randint(5033098, size = 5033098))
+	ys = session.run("match (src)-[]-(dest) where ID(src) = %d return ID(dest) as ID" % x)
 
-# session.close()
+	row_buffer = []
+	data_buffer = []
+
+	for y in ys:
+		row_buffer.append(y['ID'])
+
+	if len(row_buffer) != 0:
+		prob_out = out / len(row_buffer)
+
+		for r in row_buffer:
+			col[sparse_idx] = x
+			row[sparse_idx] = r
+			data[sparse_idx] = prob_out
+			sparse_idx += 1
+
+		data[sparse_idx] = prob_stay
+
+	# No outgoing edge
+	else:
+		data[sparse_idx] = 1.0
+
+	col[sparse_idx] = x
+	row[sparse_idx] = x
+	sparse_idx += 1
+
+matrix = csc_matrix((data, (row, col)), shape=(num_node, num_node))
+rank = np.full((num_node, 1), 1.0 / num_node)
+print "Finish setting up page rank matrix"
+
+
+
+for i in range(num_iter):
+	rank = matrix.dot(rank)
+	print rank
+print "Finish iteration"
+
+
+for i in range(num_node):
+	session.run("match (n) where ID(n) = %d set n.pagerank = %f" %(i, rank[i]))
+print "Finish updating page rank"
+
+
+session.close()
