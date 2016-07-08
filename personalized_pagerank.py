@@ -24,11 +24,7 @@ class recommend(object):
 		pass
 
 	@abstractmethod
-	def shouldRecommend(self, ID, rank):
-		pass
-
-	@abstractmethod
-	def getProperty(self, ID):
+	def getProperty(self, ID, rank):
 		pass
 
 	def recommend(self, input, step):
@@ -57,8 +53,9 @@ class recommend(object):
 	def filterResult(self):
 		recommendationList = []
 		for k, v in self.rank.iteritems():
-			if self.shouldRecommend(k ,v):
-				recommendationList.append(self.getProperty(k))
+			shouldRecommend, prop = self.getProperty(k, v)
+			if shouldRecommend:
+				recommendationList.append(prop)
 
 		for item in recommendationList:
 			print item
@@ -77,44 +74,32 @@ class recommendFromResearcher(recommend):
 	def setStart(self, input):
 		self.startID = session.run("match (r:Researcher {name:'%s'}) return ID(r) as ID" % input).single()["ID"]
 
-	def shouldRecommend(self, ID, rank):
-		result = list(self.session.run("match (p:Paper) where ID(p) = %d return p" % ID))
-		if rank < 10**(-6):
-			return False
-		if result:
-			assert len(result) == 1
-			return True
-		return False
-
-
-	def getProperty(self, ID):
+	def getProperty(self, ID, rank):
 		result = list(self.session.run("match (p:Paper) where ID(p) = %d return p.title as title" % ID))
+		if len(result) == 0 or rank < 10**(-6):
+			return False, []
 		assert len(result) == 1
-		return result[0]["title"]
+		return True, result[0]["title"]
 		
 
 class recommendToResearcher(recommend):
 	def setStart(self, input):
 		self.startID = session.run("match (p:Paper {title:'%s'}) return ID(p) as ID" % input).single()["ID"]
 
-	def shouldRecommend(self, ID, rank):
-		result = list(self.session.run("match (r:Researcher) where ID(r) = %d return r" % ID))
-		if rank < 10**(-6):
-			return False
-		if result:
-			assert len(result) == 1
-			return True
-		return False
-
-	def getProperty(self, ID):
+	def getProperty(self, ID, rank):
 		result = list(self.session.run("match (r:Researcher) where ID(r) = %d return r.name as name" % ID))
+		if len(result) == 0 or rank < 10**(-5):
+			return False, []
 		assert len(result) == 1
-		return result[0]["name"]
+		return True, result[0]["name"]
 		
 
 
-recommender = recommendFromResearcher(session)
-result = recommender.recommend("Alfredo Cano", 5)
+# recommender = recommendFromResearcher(session)
+# result = recommender.recommend("Alfredo Cano", 3)
+
+recommender = recommendToResearcher(session)
+result = recommender.recommend("Level Construction of Decision Trees in a Partition-based Framework for Classi cation.", 5)
 
 
 session.close()
