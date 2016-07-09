@@ -98,10 +98,12 @@ def parseLink(link, session, skipFirst):
 
 
 def parseAll(url, session, skipFirst):
-	f = open('log.txt', 'rw')
-	curdate =f.readline()
+	f = open('log.txt', 'r')
+	curdate = f.readline()
+	f.close()
 	html = BeautifulSoup(urllib2.urlopen(url), "lxml")
 	newdate = html.find('item').find('pubdate').text[5:16]
+	f = open('log.txt', 'w')
 	f.write(newdate)
 	f.close()
 
@@ -112,7 +114,6 @@ def parseAll(url, session, skipFirst):
 		if not compare(curdate, pubdate):
 			break
 		parseLink(guid, session, skipFirst)
-
 
 
 
