@@ -99,7 +99,7 @@ class recommendToResearcher(recommend):
 # result = recommender.recommend("Alfredo Cano", 3)
 
 recommender = recommendToResearcher(session)
-result = recommender.recommend("Level Construction of Decision Trees in a Partition-based Framework for Classi cation.", 5)
+result = recommender.recommend("Level Construction of Decision Trees in a Partition-based Framework for Classi cation.", 3)
 
 
 session.close()
