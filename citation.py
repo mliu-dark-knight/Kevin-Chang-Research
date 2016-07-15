@@ -27,6 +27,11 @@ publishat = []
 reference = []
 dict_researcher = set()
 dict_conference = set()
+dict_paper = set()
+
+
+def strip_comma(input):
+	return input.strip().replace(',', '')
 
 
 def parse():
@@ -41,7 +46,7 @@ def parse():
 		for line in f:
 			line = line[:-1]
 			if line.startswith('#*'):
-				title = line[2:]
+				title = strip_comma(line[2:])
 
 			elif line.startswith('#@'):
 				authors = line[2:].split(', ')
@@ -62,11 +67,16 @@ def parse():
 			elif line.startswith('#index'):
 				paperID = line[6:]
 
-				if authors != None and conference != None:
+				if paperID not in dict_paper:
+					dict_paper.add(paperID)
 					papers.append(Paper(paperID, title, year, 0, "Paper"))
-					publishat.append(PublishAt(paperID, conference, "PublishAt"))
-					for author in authors:
-						authorof.append(AuthorOf(author, paperID, "Authorof"))
+
+					if conference != None:
+						publishat.append(PublishAt(paperID, conference, "PublishAt"))
+
+					if authors != None:
+						for author in authors:
+							authorof.append(AuthorOf(author, paperID, "Authorof"))
 
 				title = None
 				year = None

@@ -5,7 +5,7 @@ from scipy.sparse import csc_matrix
 
 prob_stay = 0.1
 out = 1.0 - prob_stay
-num_iter = 32
+num_iter = 64
 
 
 driver = GraphDatabase.driver("bolt://localhost", auth = basic_auth("neo4j", "mliu60"))
@@ -81,11 +81,12 @@ print "Finish setting up page rank matrix"
 
 for i in range(num_iter):
 	rank = matrix.dot(rank)
+	print rank
 print "Finish iteration"
 
 
 for i in range(num_node):
-	session.run("match (n) where ID(n) = %d set n.pagerank = %f" %(i, rank[i]))
+	session.run("match (n) where ID(n) = %d set n.pagerank = %f" %(i, rank[i] * 100.0))
 print "Finish updating page rank"
 
 
