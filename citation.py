@@ -42,6 +42,8 @@ def parse():
 	conference = None
 	citeID = None
 
+	newpaperID = int('400000000000000000000000', 16)
+
 	with open("dblp.txt", "r") as f:
 		for line in f:
 			line = line[:-1]
@@ -67,16 +69,19 @@ def parse():
 			elif line.startswith('#index'):
 				paperID = line[6:]
 
-				if paperID not in dict_paper:
-					dict_paper.add(paperID)
-					papers.append(Paper(paperID, title, year, 0, "Paper"))
+				if paperID in dict_paper:
+					paperID = format(newpaperID, 'x')
+					newpaperID += 1
 
-					if conference != None:
-						publishat.append(PublishAt(paperID, conference, "PublishAt"))
+				dict_paper.add(paperID)
+				papers.append(Paper(paperID, title, year, 0, "Paper"))
 
-					if authors != None:
-						for author in authors:
-							authorof.append(AuthorOf(author, paperID, "Authorof"))
+				if conference != None:
+					publishat.append(PublishAt(paperID, conference, "PublishAt"))
+
+				if authors != None:
+					for author in authors:
+						authorof.append(AuthorOf(author, paperID, "Authorof"))
 
 				title = None
 				year = None
