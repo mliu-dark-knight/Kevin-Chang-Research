@@ -31,7 +31,7 @@ dict_paper = set()
 
 
 def strip_comma(input):
-	return input.strip().replace(',', '')
+	return input.strip().replace(',', '').replace('\"', '')
 
 
 def parse():
