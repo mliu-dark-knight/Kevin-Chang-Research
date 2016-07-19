@@ -96,15 +96,21 @@ def learn_embeddings(walks):
 def create_input():
 	print "Creating input from db"
 	with open(args.input, 'w') as f:
-		for edge in list(session.run("match (src)-->(dest) return ID(src) as srcID, ID(dest) as destID, src.pagerank as srcR, dest.pagerank as destR")):
-			srcID = edge['srcID']
-			destID = edge['destID']
-			srcR = edge['srcR']
-			destR = edge['destR']
-			edgeR = srcR + destR
-			if edgeR == 0:
-				edgeR = 10**(-6)
-			f.write(str(srcID) + ' ' + str(destID) + ' ' + str(edgeR) + '\n')
+		for i in range(11):
+			lower = i * 500000
+			upper = (i+1) * 500000
+			for edge in list(session.run("match (src)-->(dest) where ID(src) >= %d and ID(src) < %d"\
+										 "return ID(src) as srcID, ID(dest) as destID, src.pagerank as srcR, dest.pagerank as destR" % (lower, upper))):
+				srcID = edge['srcID']
+				destID = edge['destID']
+				srcR = edge['srcR']
+				'''
+				destR = edge['destR']
+				edgeR = srcR + destR
+				if edgeR == 0:
+					edgeR = 10**(-6)
+				'''
+				f.write(str(srcID) + ' ' + str(destID) + '\n')
 	f.close()
 
 
