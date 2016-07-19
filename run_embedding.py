@@ -99,7 +99,7 @@ def create_input():
 		for i in range(11):
 			lower = i * 500000
 			upper = (i+1) * 500000
-			for edge in list(session.run("match (src)-->(dest) where ID(src) >= %d and ID(src) < %d"\
+			for edge in list(session.run("match (src)-->(dest) where ID(src) >= %d and ID(src) < %d "\
 										 "return ID(src) as srcID, ID(dest) as destID, src.pagerank as srcR, dest.pagerank as destR" % (lower, upper))):
 				srcID = edge['srcID']
 				destID = edge['destID']
