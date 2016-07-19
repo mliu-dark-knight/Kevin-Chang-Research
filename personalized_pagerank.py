@@ -76,7 +76,7 @@ class recommendFromResearcher(recommend):
 
 	def getProperty(self, ID, rank):
 		result = list(self.session.run("match (p:Paper) where ID(p) = %d return p.title as title" % ID))
-		if len(result) == 0 or rank < 10**(-6):
+		if len(result) == 0 or rank < 1e-2 / len(self.G):
 			return False, []
 		assert len(result) == 1
 		return True, result[0]["title"]
@@ -88,7 +88,7 @@ class recommendToResearcher(recommend):
 
 	def getProperty(self, ID, rank):
 		result = list(self.session.run("match (r:Researcher) where ID(r) = %d return r.name as name" % ID))
-		if len(result) == 0 or rank < 10**(-5):
+		if len(result) == 0 or rank < 1e-2 / len(self.G):
 			return False, []
 		assert len(result) == 1
 		return True, result[0]["name"]
