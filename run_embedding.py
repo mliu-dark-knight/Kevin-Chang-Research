@@ -21,10 +21,10 @@ def parse_args():
 	'''
 	parser = argparse.ArgumentParser(description="Run node2vec.")
 
-	parser.add_argument('--input', nargs='?', default='graph/karate.edgelist',
+	parser.add_argument('--input', nargs='?', default='karate.edgelist',
 	                    help='Input graph path')
 
-	parser.add_argument('--output', nargs='?', default='emb/karate.emb',
+	parser.add_argument('--output', nargs='?', default='karate.emb',
 	                    help='Embeddings path')
 
 	parser.add_argument('--dimensions', type=int, default=128,
@@ -67,6 +67,7 @@ def read_graph():
 	'''
 	Reads the input network in networkx.
 	'''
+	print "Reading graph"
 	if args.weighted:
 		G = nx.read_edgelist(args.input, nodetype=int, data=(('weight',float),), create_using=nx.DiGraph())
 	else:
@@ -83,6 +84,7 @@ def learn_embeddings(walks):
 	'''
 	Learn embeddings by optimizing the Skipgram objective using SGD.
 	'''
+	print "Learning embeddings"
 	walks = [map(str, walk) for walk in walks]
 	model = Word2Vec(walks, size=args.dimensions, window=args.window_size, min_count=0, 
 		workers=args.workers, iter=args.iter)
@@ -91,16 +93,19 @@ def learn_embeddings(walks):
 	return
 
 def create_input():
+	print "Creating input from db"
 	with open(args.input, 'w') as f:
-		for edge in list(session.run("match (src)-[:r]->(dest) return ID(src) as srcID, ID(dest) as destID, src.pagerank as srcR, dest.pagerank as destR")):
+		for edge in list(session.run("match (src)-[:r]->(dest) where ID(src) > 2000000, ID(sr) < 2050000 return ID(src) as srcID, ID(dest) as destID, src.pagerank as srcR, dest.pagerank as destR")):
 			srcID = edge['srcID']
 			destID = edge['destID']
 			srcR = edge['srcR']
 			destR = edge['destR']
-		f.write(srcID + ' ' destID + ' ' + (srcR + destR))
+		f.write(str(srcID) + ' ' + str(destID) + ' ' + str(srcR + destR))
 	f.close()
 
+
 def save_output():
+	print "Saving output to db"
 	with open(args.output, 'r') as f:
 		for line in f:
 			line = line[:-1].split(' ', 1)
