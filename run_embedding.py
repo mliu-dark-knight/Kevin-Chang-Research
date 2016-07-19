@@ -8,6 +8,7 @@ Knowledge Discovery and Data Mining (KDD), 2016
 '''
 
 import argparse
+import csv
 import numpy as np
 import networkx as nx
 import node2vec
@@ -52,9 +53,9 @@ def parse_args():
 	                    help='Inout hyperparameter. Default is 1.')
 
 	parser.add_argument('--weighted', dest='weighted', action='store_true',
-	                    help='Boolean specifying (un)weighted. Default is unweighted.')
+	                    help='Boolean specifying (un)weighted. Default is weighted.')
 	parser.add_argument('--unweighted', dest='unweighted', action='store_false')
-	parser.set_defaults(weighted=False)
+	parser.set_defaults(weighted=True)
 
 	parser.add_argument('--directed', dest='directed', action='store_true',
 	                    help='Graph is (un)directed. Default is undirected.')
@@ -95,12 +96,15 @@ def learn_embeddings(walks):
 def create_input():
 	print "Creating input from db"
 	with open(args.input, 'w') as f:
-		for edge in list(session.run("match (src)-[:r]->(dest) where ID(src) > 2000000, ID(sr) < 2050000 return ID(src) as srcID, ID(dest) as destID, src.pagerank as srcR, dest.pagerank as destR")):
+		for edge in list(session.run("match (src)-->(dest) return ID(src) as srcID, ID(dest) as destID, src.pagerank as srcR, dest.pagerank as destR")):
 			srcID = edge['srcID']
 			destID = edge['destID']
 			srcR = edge['srcR']
 			destR = edge['destR']
-		f.write(str(srcID) + ' ' + str(destID) + ' ' + str(srcR + destR))
+			edgeR = srcR + destR
+			if edgeR == 0:
+				edgeR = 10**(-6)
+			f.write(str(srcID) + ' ' + str(destID) + ' ' + str(edgeR) + '\n')
 	f.close()
 
 
@@ -110,8 +114,8 @@ def save_output():
 		for line in f:
 			line = line[:-1].split(' ', 1)
 			nodeID = int(line[0])
-			vec = line[1]
-			session.run("match (n) where ID(n) = %d set n.vector = %s" % (nodeID, vec))
+			vec = (', ').join(line[1].split(' '))
+			session.run("match (n) where ID(n) = %d set n.vector = '%s'" % (nodeID, vec))
 	f.close()
 
 def main(args):
