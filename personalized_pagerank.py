@@ -78,7 +78,7 @@ class recommendFromResearcher(recommend):
 		if len(list(self.session.run("match (p:Paper)-[a:AuthorOf]-(r:Researcher) where ID(p) = %d and ID(r) = %d return a" % (ID, srcID)))) != 0:
 			return False, None
 		result = list(self.session.run("match (p:Paper) where ID(p) = %d return p.title as title" % ID))
-		if len(result) == 0 or rank < 1e-6 / len(self.G):
+		if len(result) == 0 or rank < 1e-4 / len(self.G):
 			return False, None
 		assert len(result) == 1
 		return True, result[0]["title"]
@@ -92,7 +92,7 @@ class recommendToResearcher(recommend):
 		if len(list(self.session.run("match (p:Paper)-[a:AuthorOf]-(r:Researcher) where ID(r) = %d and ID(p) = %d return a" % (ID, srcID)))) != 0:
 			return False, None
 		result = list(self.session.run("match (r:Researcher) where ID(r) = %d return r.name as name" % ID))
-		if len(result) == 0 or rank < 1e-6 / len(self.G):
+		if len(result) == 0 or rank < 1e-4 / len(self.G):
 			return False, None
 		assert len(result) == 1
 		return True, result[0]["name"]
