@@ -15,6 +15,8 @@ import node2vec
 from gensim.models import Word2Vec
 from neo4j.v1 import GraphDatabase, basic_auth
 
+per_session = 50000
+
 
 def parse_args():
 	'''
@@ -53,9 +55,9 @@ def parse_args():
 	                    help='Inout hyperparameter. Default is 1.')
 
 	parser.add_argument('--weighted', dest='weighted', action='store_true',
-	                    help='Boolean specifying (un)weighted. Default is weighted.')
+	                    help='Boolean specifying (un)weighted. Default is unweighted.')
 	parser.add_argument('--unweighted', dest='unweighted', action='store_false')
-	parser.set_defaults(weighted=True)
+	parser.set_defaults(weighted=False)
 
 	parser.add_argument('--directed', dest='directed', action='store_true',
 	                    help='Graph is (un)directed. Default is undirected.')
@@ -96,15 +98,17 @@ def learn_embeddings(walks):
 def create_input():
 	print "Creating input from db"
 	with open(args.input, 'w') as f:
-		for i in range(11):
-			lower = i * 500000
-			upper = (i+1) * 500000
+		num_node = session.run("match (n) return count(*) as count").single()['count']
+		for i in range(num_node / per_session + 1):
+			lower = i * per_session
+			upper = (i+1) * per_session
+
 			for edge in list(session.run("match (src)-->(dest) where ID(src) >= %d and ID(src) < %d "\
 										 "return ID(src) as srcID, ID(dest) as destID, src.pagerank as srcR, dest.pagerank as destR" % (lower, upper))):
 				srcID = edge['srcID']
 				destID = edge['destID']
-				srcR = edge['srcR']
 				'''
+				srcR = edge['srcR'
 				destR = edge['destR']
 				edgeR = srcR + destR
 				if edgeR == 0:

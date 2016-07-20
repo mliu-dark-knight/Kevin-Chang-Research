@@ -44,7 +44,7 @@ def parse():
 
 	newpaperID = int('400000000000000000000000', 16)
 
-	with open("dblp.txt", "r") as f:
+	with open("data/dblp.txt", "r") as f:
 		for line in f:
 			line = line[:-1]
 			if line.startswith('#*'):
@@ -81,7 +81,7 @@ def parse():
 
 				if authors != None:
 					for author in authors:
-						authorof.append(AuthorOf(author, paperID, "Authorof"))
+						authorof.append(AuthorOf(author, paperID, "AuthorOf"))
 
 				title = None
 				year = None
@@ -103,24 +103,24 @@ Do not change orders, node should be inserted before inserting edges
 '''
 def to_csv():
 	df = pd.DataFrame(papers, columns = ["paperID:ID", "title", "year", "pagerank", ":LABEL"])
-	df.to_csv("Paper.csv", index = False, encoding = 'utf-8')
+	df.to_csv("data/Paper.csv", index = False, encoding = 'utf-8')
 
 	researchers = [Researcher(name, 0, "Researcher") for name in dict_researcher]	
 	df = pd.DataFrame(researchers, columns = ["name:ID", "pagerank", ":LABEL"])
-	df.to_csv("Researcher.csv", index = False, encoding = 'utf-8')
+	df.to_csv("data/Researcher.csv", index = False, encoding = 'utf-8')
 
 	conferences = [Conference(conference, 0, "Conference") for conference in dict_conference]	
 	df = pd.DataFrame(conferences, columns = ["conference:ID", "pagerank", ":LABEL"])
-	df.to_csv("Conference.csv", index = False, encoding = 'utf-8')
+	df.to_csv("data/Conference.csv", index = False, encoding = 'utf-8')
 
 	df = pd.DataFrame(authorof, columns = [":START_ID", ":END_ID", ":TYPE"])
-	df.to_csv("AuthorOf.csv", index = False, encoding = 'utf-8')
+	df.to_csv("data/AuthorOf.csv", index = False, encoding = 'utf-8')
 
 	df = pd.DataFrame(publishat, columns = [":START_ID", ":END_ID", ":TYPE"])
-	df.to_csv("PublishAt.csv", index = False, encoding = 'utf-8')
+	df.to_csv("data/PublishAt.csv", index = False, encoding = 'utf-8')
 
 	df = pd.DataFrame(reference, columns = [":START_ID", ":END_ID", ":TYPE"])
-	df.to_csv("Reference.csv", index = False, encoding = 'utf-8')
+	df.to_csv("data/Reference.csv", index = False, encoding = 'utf-8')
 
 
 parse()
