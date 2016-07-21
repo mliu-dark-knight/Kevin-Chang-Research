@@ -16,7 +16,7 @@ import node2vec
 from gensim.models import Word2Vec
 from neo4j.v1 import GraphDatabase, basic_auth
 
-per_session = 500000
+divisor = 100
 
 
 def parse_args():
@@ -31,13 +31,13 @@ def parse_args():
 	parser.add_argument('--dimensions', type=int, default=64,
 	                    help='Number of dimensions. Default is 128.')
 
-	parser.add_argument('--walk-length', type=int, default=32,
+	parser.add_argument('--walk-length', type=int, default=4,
 	                    help='Length of walk per source. Default is 10.')
 
 	parser.add_argument('--num-walks', type=int, default=16,
 	                    help='Number of walks per source. Default is 40.')
 
-	parser.add_argument('--window-size', type=int, default=16,
+	parser.add_argument('--window-size', type=int, default=4,
                     	help='Context size for optimization. Default is 10.')
 
 	parser.add_argument('--iter', default=1, type=int,
@@ -59,32 +59,27 @@ def parse_args():
 
 	return parser.parse_args()
 
-def construct_graph():
+def construct_graph(res):
 	'''
 	Reads the input network in networkx.
 	'''
-	print "Constructing graph from db"
+	print "Constructing sub graph %d from db" % res
 	G = nx.Graph()
-	num_node = session.run("match (n) return count(*) as count").single()['count']
-	for i in range(num_node / per_session + 1):
-		lower = i * per_session
-		upper = (i+1) * per_session
+	for edge in list(session.run("match (src)-->(dest) where ID(src)" + " % " +
+								 "%d = %d return ID(src) as srcID, ID(dest) as destID, src.pagerank as srcR, dest.pagerank as destR" % (divisor, res))):
+		srcID = edge['srcID']
+		destID = edge['destID']
 
-		for edge in list(session.run("match (src)-->(dest) where ID(src) >= %d and ID(src) < %d "\
-									 "return ID(src) as srcID, ID(dest) as destID, src.pagerank as srcR, dest.pagerank as destR" % (lower, upper))):
-			srcID = edge['srcID']
-			destID = edge['destID']
+		if args.weighted:
+			srcR = edge['srcR']
+			destR = edge['destR']
+			weight = srcR + destR
+			if weight == 0:
+				weight = 1e-6
 
-			if args.weighted:
-				srcR = edge['srcR']
-				destR = edge['destR']
-				weight = srcR + destR
-				if weight == 0:
-					weight = 1e-6
-
-				G.add_edge(srcID, destID, weight = weight)
-			else:
-				G.add_edge(srcID, destID, weight = 1.0)
+			G.add_edge(srcID, destID, weight = weight)
+		else:
+			G.add_edge(srcID, destID, weight = 1.0)
 
 	return G
 
@@ -115,17 +110,18 @@ def main(args):
 	'''
 	Pipeline for representational learning for all nodes in a graph.
 	'''
-	nx_G = construct_graph()
-	G = node2vec.Graph(nx_G, is_directed = False, p = args.p, q = args.q)
+	walks = []
 
-	del nx_G
-	gc.collect()
+	for i in range(divisor):
+		nx_G = construct_graph(i)
+		G = node2vec.Graph(nx_G, is_directed = False, p = args.p, q = args.q)
+		del nx_G
+		gc.collect()
 
-	G.preprocess_transition_probs()
-	walks = G.simulate_walks(args.num_walks, args.walk_length)
-
-	del G
-	gc.collect()
+		G.preprocess_transition_probs()
+		walks += G.simulate_walks(args.num_walks, args.walk_length)
+		del G
+		gc.collect()
 
 	learn_embeddings(walks)
 
