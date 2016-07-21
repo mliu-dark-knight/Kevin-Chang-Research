@@ -1,3 +1,4 @@
+import gc
 from neo4j.v1 import GraphDatabase, basic_auth
 import numpy as np
 from scipy.sparse import csc_matrix
@@ -74,6 +75,10 @@ for x in range(num_node):
 
 
 matrix = csc_matrix((data, (row, col)), shape=(num_node, num_node))
+
+del row, col, data
+gc.collect()
+
 rank = np.full((num_node, 1), 1.0 / num_node)
 print "Finish setting up page rank matrix"
 
@@ -84,6 +89,8 @@ for i in range(num_iter):
 	print rank
 print "Finish iteration"
 
+del matrix
+gc.collect()
 
 for i in range(num_node):
 	session.run("match (n) where ID(n) = %d set n.pagerank = %f" %(i, rank[i] * 100.0))

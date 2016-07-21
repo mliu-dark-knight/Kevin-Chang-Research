@@ -7,6 +7,7 @@ Aditya Grover and Jure Leskovec
 Knowledge Discovery and Data Mining (KDD), 2016
 '''
 
+import gc
 import argparse
 import csv
 import numpy as np
@@ -15,7 +16,7 @@ import node2vec
 from gensim.models import Word2Vec
 from neo4j.v1 import GraphDatabase, basic_auth
 
-per_session = 50000
+per_session = 500000
 
 
 def parse_args():
@@ -24,22 +25,19 @@ def parse_args():
 	'''
 	parser = argparse.ArgumentParser(description="Run node2vec.")
 
-	parser.add_argument('--input', nargs='?', default='karate.edgelist',
-	                    help='Input graph path')
-
 	parser.add_argument('--output', nargs='?', default='karate.emb',
 	                    help='Embeddings path')
 
-	parser.add_argument('--dimensions', type=int, default=128,
+	parser.add_argument('--dimensions', type=int, default=64,
 	                    help='Number of dimensions. Default is 128.')
 
-	parser.add_argument('--walk-length', type=int, default=10,
+	parser.add_argument('--walk-length', type=int, default=32,
 	                    help='Length of walk per source. Default is 10.')
 
-	parser.add_argument('--num-walks', type=int, default=10,
+	parser.add_argument('--num-walks', type=int, default=16,
 	                    help='Number of walks per source. Default is 40.')
 
-	parser.add_argument('--window-size', type=int, default=10,
+	parser.add_argument('--window-size', type=int, default=16,
                     	help='Context size for optimization. Default is 10.')
 
 	parser.add_argument('--iter', default=1, type=int,
@@ -59,27 +57,34 @@ def parse_args():
 	parser.add_argument('--unweighted', dest='unweighted', action='store_false')
 	parser.set_defaults(weighted=False)
 
-	parser.add_argument('--directed', dest='directed', action='store_true',
-	                    help='Graph is (un)directed. Default is undirected.')
-	parser.add_argument('--undirected', dest='undirected', action='store_false')
-	parser.set_defaults(directed=False)
-
 	return parser.parse_args()
 
-def read_graph():
+def construct_graph():
 	'''
 	Reads the input network in networkx.
 	'''
-	print "Reading graph"
-	if args.weighted:
-		G = nx.read_edgelist(args.input, nodetype=int, data=(('weight',float),), create_using=nx.DiGraph())
-	else:
-		G = nx.read_edgelist(args.input, nodetype=int, create_using=nx.DiGraph())
-		for edge in G.edges():
-			G[edge[0]][edge[1]]['weight'] = 1
+	print "Constructing graph from db"
+	G = nx.Graph()
+	num_node = session.run("match (n) return count(*) as count").single()['count']
+	for i in range(num_node / per_session + 1):
+		lower = i * per_session
+		upper = (i+1) * per_session
 
-	if not args.directed:
-		G = G.to_undirected()
+		for edge in list(session.run("match (src)-->(dest) where ID(src) >= %d and ID(src) < %d "\
+									 "return ID(src) as srcID, ID(dest) as destID, src.pagerank as srcR, dest.pagerank as destR" % (lower, upper))):
+			srcID = edge['srcID']
+			destID = edge['destID']
+
+			if args.weighted:
+				srcR = edge['srcR']
+				destR = edge['destR']
+				weight = srcR + destR
+				if weight == 0:
+					weight = 1e-6
+
+				G.add_edge(srcID, destID, weight = weight)
+			else:
+				G.add_edge(srcID, destID, weight = 1.0)
 
 	return G
 
@@ -95,36 +100,14 @@ def learn_embeddings(walks):
 	
 	return
 
-def create_input():
-	print "Creating input from db"
-	with open(args.input, 'w') as f:
-		num_node = session.run("match (n) return count(*) as count").single()['count']
-		for i in range(num_node / per_session + 1):
-			lower = i * per_session
-			upper = (i+1) * per_session
-
-			for edge in list(session.run("match (src)-->(dest) where ID(src) >= %d and ID(src) < %d "\
-										 "return ID(src) as srcID, ID(dest) as destID, src.pagerank as srcR, dest.pagerank as destR" % (lower, upper))):
-				srcID = edge['srcID']
-				destID = edge['destID']
-				'''
-				srcR = edge['srcR'
-				destR = edge['destR']
-				edgeR = srcR + destR
-				if edgeR == 0:
-					edgeR = 10**(-6)
-				'''
-				f.write(str(srcID) + ' ' + str(destID) + '\n')
-	f.close()
-
 
 def save_output():
-	print "Saving output to db"
+	print "Inserting vector to db"
 	with open(args.output, 'r') as f:
 		for line in f:
 			line = line[:-1].split(' ', 1)
 			nodeID = int(line[0])
-			vec = (', ').join(line[1].split(' '))
+			vec = line[1]
 			session.run("match (n) where ID(n) = %d set n.vector = '%s'" % (nodeID, vec))
 	f.close()
 
@@ -132,12 +115,23 @@ def main(args):
 	'''
 	Pipeline for representational learning for all nodes in a graph.
 	'''
-	create_input()
-	nx_G = read_graph()
-	G = node2vec.Graph(nx_G, args.directed, args.p, args.q)
+	nx_G = construct_graph()
+	G = node2vec.Graph(nx_G, is_directed = False, p = args.p, q = args.q)
+
+	del nx_G
+	gc.collect()
+
 	G.preprocess_transition_probs()
 	walks = G.simulate_walks(args.num_walks, args.walk_length)
+
+	del G
+	gc.collect()
+
 	learn_embeddings(walks)
+
+	del walks
+	gc.collect()
+
 	save_output()
 
 

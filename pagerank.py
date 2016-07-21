@@ -38,7 +38,7 @@ for i in range(num_node / per_session + 1):
 		G.add_edge(edge['srcID'], edge['destID'])
 print "Finish setting up graph"
 
-rank = nx.pagerank_scipy(G, alpha = 0.9, tol = 1e-06, max_iter = 256)
+rank = nx.pagerank_scipy(G, alpha = 0.9, tol = 1e-6, max_iter = 256)
 print "Finish ranking"
 
 for k, v in rank.iteritems():
