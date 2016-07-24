@@ -100,7 +100,7 @@ class recommendToResearcher(recommend):
 
 
 recommender = recommendFromResearcher(session)
-result = recommender.recommend("Alfredo Cano", 3)
+result = recommender.recommend("Kevin Chen-Chuan Chang", 3)
 
 recommender = recommendToResearcher(session)
 result = recommender.recommend("Level Construction of Decision Trees in a Partition-based Framework for Classi cation.", 3)
