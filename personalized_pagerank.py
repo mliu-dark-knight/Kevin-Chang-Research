@@ -53,12 +53,14 @@ class recommend(object):
 	def filterResult(self):
 		recommendationList = []
 		for k, v in self.rank.iteritems():
-			shouldRecommend, prop = self.getProperty(k, self.startID, v)
+			shouldRecommend, prop, pgr = self.getProperty(k, self.startID, v)
 			if shouldRecommend:
-				recommendationList.append(prop)
+				recommendationList.append((prop, pgr))
 
+		'''
 		for item in recommendationList:
 			print item
+		'''
 		return recommendationList
 
 	def showRank(self):
@@ -70,40 +72,74 @@ class recommend(object):
 		
 
 
-class recommendFromResearcher(recommend):
+class recommendPaperToResearcher(recommend):
 	def setStart(self, input):
 		self.startID = session.run("match (r:Researcher {name:'%s'}) return ID(r) as ID" % input).single()["ID"]
 
 	def getProperty(self, ID, srcID, rank):
 		if len(list(self.session.run("match (p:Paper)-[a:AuthorOf]-(r:Researcher) where ID(p) = %d and ID(r) = %d return a" % (ID, srcID)))) != 0:
-			return False, None
-		result = list(self.session.run("match (p:Paper) where ID(p) = %d return p.title as title" % ID))
+			return False, None, None
+		result = list(self.session.run("match (p:Paper) where ID(p) = %d return p.title as title, p.pagerank as PR" % ID))
 		if len(result) == 0 or rank < 1e-4 / len(self.G):
-			return False, None
+			return False, None, None
 		assert len(result) == 1
-		return True, result[0]["title"]
+		return True, result[0]["title"], result[0]["PR"]
 		
 
-class recommendToResearcher(recommend):
+class recommendResearcherToPaper(recommend):
 	def setStart(self, input):
 		self.startID = session.run("match (p:Paper {title:'%s'}) return ID(p) as ID" % input).single()["ID"]
 
 	def getProperty(self, ID, srcID, rank):
 		if len(list(self.session.run("match (p:Paper)-[a:AuthorOf]-(r:Researcher) where ID(r) = %d and ID(p) = %d return a" % (ID, srcID)))) != 0:
-			return False, None
-		result = list(self.session.run("match (r:Researcher) where ID(r) = %d return r.name as name" % ID))
+			return False, None, None
+		result = list(self.session.run("match (r:Researcher) where ID(r) = %d return r.name as name, r.pagerank as PR" % ID))
 		if len(result) == 0 or rank < 1e-4 / len(self.G):
-			return False, None
+			return False, None, None
 		assert len(result) == 1
-		return True, result[0]["name"]
-		
+		return True, result[0]["name"], result[0]["PR"]
 
 
-recommender = recommendFromResearcher(session)
-result = recommender.recommend("Kevin Chen-Chuan Chang", 3)
+class recommendResearcherToResearcher(recommend):
+	def setStart(self, input):
+		self.startID = session.run("match (r:Researcher {name: '%s'} return ID(r) as ID)" % input).single()["ID"]
 
-recommender = recommendToResearcher(session)
-result = recommender.recommend("Level Construction of Decision Trees in a Partition-based Framework for Classi cation.", 3)
+	def getProperty(self, ID, srcID, rank):
+		if ID == srcID:
+			return False, None, None
+		result = list(self.session.run("match (r:Researcher) where ID(r) = %d return r.name as name, r.pagerank as PR" % ID))
+		if len(result) == 0 or rank < 1e-4 / len(self.G):
+			return False, None, None
+		assert len(result) == 1
+		return True, result[0]["name"], result[0]["PR"]
+
+
+class recommendPaperToPaper(recommend):
+	def setStart(self, input):
+		self.startID = session.run("match (p:Paper {title: '%s'}) return ID(p) as ID").single()["ID"]
+	
+	def getProperty(self, ID, srcID, rank):
+		if ID == srcID:
+			return False, None, None
+		result = list(self.session.run("match (p:Paper) where ID(p) = %d return p.title as title, p.pagerank as PR" % ID))
+		if len(result) == 0 or rank < 1e-4 / len(self.G):
+			return False, None, None
+		assert len(result) == 1
+		return True, result[0]["title"], result[0]["PR"]
+
+
+recommender = recommendPaperToResearcher(session)
+result = recommender.recommend("Richard Socher", 3)
+
+recommender = recommendResearcherToPaper(session)
+result = recommender.recommend("Dynamic Memory Networks for Visual and Textual Question Answering.", 3)
+
+recommender = recommendResearcherToResearcher(session)
+result = recommender.recommend("Richard Socher", 4)
+
+recommender = recommendPaperToPaper(session)
+result = recommender.recommend("Dynamic Memory Networks for Visual and Textual Question Answering.", 2)
 
 
 session.close()
+
