@@ -77,6 +77,7 @@ class Graph():
 		'''
 		Preprocessing of transition probabilities for guiding the random walks.
 		'''
+		print "Preprocessing transitions probabilities"
 		G = self.G
 		is_directed = self.is_directed
 
