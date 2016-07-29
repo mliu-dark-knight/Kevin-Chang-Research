@@ -28,6 +28,7 @@ reference = []
 dict_researcher = set()
 dict_conference = set()
 dict_paper = set()
+dict_badpaper = set()
 
 
 def strip_comma(input):
@@ -49,6 +50,7 @@ def parse():
 			line = line[:-1]
 			if line.startswith('#*'):
 				title = strip_comma(line[2:])
+
 
 			elif line.startswith('#@'):
 				authors = line[2:].split(', ')
@@ -73,6 +75,10 @@ def parse():
 					paperID = format(newpaperID, 'x')
 					newpaperID += 1
 
+				if title.startswith("Proceedings"):
+					dict_badpaper.add(paperID)
+					continue
+
 				dict_paper.add(paperID)
 				papers.append(Paper(paperID, title, year, 0, "Paper"))
 
@@ -92,7 +98,8 @@ def parse():
 
 			elif line.startswith('#%'):
 				citeID = line[2:]
-				reference.append(Reference(paperID, citeID, "Reference"))
+				if citeID not in dict_badpaper and paperID not in dict_badpaper:
+					reference.append(Reference(paperID, citeID, "Reference"))
 
 	f.close()
 
