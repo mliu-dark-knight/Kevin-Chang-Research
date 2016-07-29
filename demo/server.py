@@ -3,7 +3,7 @@ import json
 from flask import Flask, request
 from flask_restful import reqparse, abort, Api, Resource
 from neo4j.v1 import GraphDatabase, basic_auth
-import ../personlized_page_rank
+from personalized_pagerank import recommendPaperToResearcher, recommendResearcherToResearcher, recommendResearcherToPaper, recommendPaperToPaper
 
 
 app = Flask(__name__)
@@ -22,7 +22,11 @@ class BasicInfo(Resource):
 		nodeType = nodes[node]
 		nodeKey = args[nodeType]
 		result = list(session.run("match (n:%s) where n.%s = '%s' return n.%s as %s, n.pagerank as PR" % (node, nodeType, nodeKey, nodeType, nodeType)))
-		assert len(result) <= 1
+		try:
+			assert len(result) <= 1
+		except:
+			raise ValueError("%s does not exist in database" % node)
+
 		return demjson.encode({nodeType: result[0][nodeType], 'pagerank': result[0]['PR']})
 
 
@@ -30,7 +34,7 @@ class RecommendPtoR(Resource):
 	def get(self):
 		args = parser.parse_args()
 		name = args['name']
-		recommender = personlized_page_rank.recommendPaperToResearcher(session)
+		recommender = recommendPaperToResearcher(session)
 		result = recommender.recommend(name, 3)
 		return json.dumps([{'title': t, 'pagerank': r} for (t, r) in result])
 
@@ -39,7 +43,7 @@ class RecommendRtoR(Resource):
 	def get(self):
 		args = parser.parse_args()
 		name = args['name']
-		recommender = personlized_page_rank.recommendResearcherToResearcher(session)
+		recommender = recommendResearcherToResearcher(session)
 		result = recommender.recommend(name, 4)
 		return json.dumps([{'name': n, 'pagerank': r} for (n, r) in result])
 
@@ -48,8 +52,8 @@ class RecommendRtoP(Resource):
 	def get(self):
 		args = parser.parse_args()
 		title = args['title']
-		recommender = personlized_page_rank.recommendResearcherToPaper(session)
-		result = recommender.recommend(name, 3)
+		recommender = recommendResearcherToPaper(session)
+		result = recommender.recommend(title, 3)
 		return json.dumps([{'name': n, 'pagerank': r} for (n, r) in result])
 
 
@@ -57,8 +61,8 @@ class RecommendPtoP(Resource):
 	def get(self):
 		args = parser.parse_args()
 		title = args['title']
-		recommender = personlized_page_rank.recommendPaperToPaper(session)
-		result = recommender.recommend(name, 2)
+		recommender = recommendPaperToPaper(session)
+		result = recommender.recommend(title, 2)
 		return json.dumps([{'title': t, 'pagerank': r} for (t, r) in result])
 
 
@@ -67,12 +71,13 @@ driver = GraphDatabase.driver("bolt://localhost", auth = basic_auth("neo4j", "ml
 session = driver.session()
 
 allApi = {'/BasicInfo': BasicInfo, 
-		  '/Recommend/PtoR': RecommendRtoR, 
+		  '/Recommend/PtoR': RecommendPtoR, 
 		  '/Recommend/RtoR': RecommendRtoR, 
 		  '/Recommend/RtoP': RecommendRtoP, 
 		  '/Recommend/PtoP': RecommendPtoP}
 for k, v in allApi.iteritems():
 	api.add_resource(v, k)
+
 
 
 if __name__ == '__main__':

@@ -6,10 +6,6 @@ from scipy.sparse import csc_matrix
 from neo4j.v1 import GraphDatabase, basic_auth
 
 
-driver = GraphDatabase.driver("bolt://localhost", auth = basic_auth("neo4j", "mliu60"))
-session = driver.session()
-
-
 class recommend(object):
 	__metaclass__ = ABCMeta
 
@@ -17,6 +13,7 @@ class recommend(object):
 		self.personalization = {}
 		self.startID = -1
 		self.G = nx.Graph()
+		self.threshold = 0.25
 		self.session = session
 
 	@abstractmethod
@@ -37,7 +34,7 @@ class recommend(object):
 		for i in range(step):
 			nextID = []
 			for src in listID:
-				for dest in list(session.run("match (src)-[]-(dest) where ID(src) = %d return distinct(ID(dest)) as ID" % src)):
+				for dest in list(self.session.run("match (src)-[]-(dest) where ID(src) = %d return distinct(ID(dest)) as ID" % src)):
 					dest = dest['ID']
 					if dest not in self.personalization:
 						self.G.add_edge(src, dest)
@@ -74,13 +71,13 @@ class recommend(object):
 
 class recommendPaperToResearcher(recommend):
 	def setStart(self, input):
-		self.startID = session.run("match (r:Researcher {name:'%s'}) return ID(r) as ID" % input).single()["ID"]
+		self.startID = self.session.run("match (r:Researcher {name:'%s'}) return ID(r) as ID" % input).single()["ID"]
 
 	def getProperty(self, ID, srcID, rank):
 		if len(list(self.session.run("match (p:Paper)-[a:AuthorOf]-(r:Researcher) where ID(p) = %d and ID(r) = %d return a" % (ID, srcID)))) != 0:
 			return False, None, None
 		result = list(self.session.run("match (p:Paper) where ID(p) = %d return p.title as title, p.pagerank as PR" % ID))
-		if len(result) == 0 or rank < 1e-4 / len(self.G):
+		if len(result) == 0 or rank < self.threshold / len(self.G):
 			return False, None, None
 		assert len(result) == 1
 		return True, result[0]["title"], result[0]["PR"]
@@ -88,13 +85,13 @@ class recommendPaperToResearcher(recommend):
 
 class recommendResearcherToPaper(recommend):
 	def setStart(self, input):
-		self.startID = session.run("match (p:Paper {title:'%s'}) return ID(p) as ID" % input).single()["ID"]
+		self.startID = self.session.run("match (p:Paper {title:'%s'}) return ID(p) as ID" % input).single()["ID"]
 
 	def getProperty(self, ID, srcID, rank):
 		if len(list(self.session.run("match (p:Paper)-[a:AuthorOf]-(r:Researcher) where ID(r) = %d and ID(p) = %d return a" % (ID, srcID)))) != 0:
 			return False, None, None
 		result = list(self.session.run("match (r:Researcher) where ID(r) = %d return r.name as name, r.pagerank as PR" % ID))
-		if len(result) == 0 or rank < 1e-4 / len(self.G):
+		if len(result) == 0 or rank < self.threshold / len(self.G):
 			return False, None, None
 		assert len(result) == 1
 		return True, result[0]["name"], result[0]["PR"]
@@ -102,13 +99,13 @@ class recommendResearcherToPaper(recommend):
 
 class recommendResearcherToResearcher(recommend):
 	def setStart(self, input):
-		self.startID = session.run("match (r:Researcher {name: '%s'} return ID(r) as ID)" % input).single()["ID"]
+		self.startID = self.session.run("match (r:Researcher {name: '%s'}) return ID(r) as ID" % input).single()["ID"]
 
 	def getProperty(self, ID, srcID, rank):
 		if ID == srcID:
 			return False, None, None
 		result = list(self.session.run("match (r:Researcher) where ID(r) = %d return r.name as name, r.pagerank as PR" % ID))
-		if len(result) == 0 or rank < 1e-4 / len(self.G):
+		if len(result) == 0 or rank < self.threshold / len(self.G):
 			return False, None, None
 		assert len(result) == 1
 		return True, result[0]["name"], result[0]["PR"]
@@ -116,30 +113,15 @@ class recommendResearcherToResearcher(recommend):
 
 class recommendPaperToPaper(recommend):
 	def setStart(self, input):
-		self.startID = session.run("match (p:Paper {title: '%s'}) return ID(p) as ID").single()["ID"]
+		self.startID = self.session.run("match (p:Paper {title: '%s'}) return ID(p) as ID" % input).single()["ID"]
 	
 	def getProperty(self, ID, srcID, rank):
 		if ID == srcID:
 			return False, None, None
 		result = list(self.session.run("match (p:Paper) where ID(p) = %d return p.title as title, p.pagerank as PR" % ID))
-		if len(result) == 0 or rank < 1e-4 / len(self.G):
+		if len(result) == 0 or rank < self.threshold / len(self.G):
 			return False, None, None
 		assert len(result) == 1
 		return True, result[0]["title"], result[0]["PR"]
 
-
-recommender = recommendPaperToResearcher(session)
-result = recommender.recommend("Richard Socher", 3)
-
-recommender = recommendResearcherToPaper(session)
-result = recommender.recommend("Dynamic Memory Networks for Visual and Textual Question Answering.", 3)
-
-recommender = recommendResearcherToResearcher(session)
-result = recommender.recommend("Richard Socher", 4)
-
-recommender = recommendPaperToPaper(session)
-result = recommender.recommend("Dynamic Memory Networks for Visual and Textual Question Answering.", 2)
-
-
-session.close()
 
