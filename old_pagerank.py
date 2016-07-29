@@ -6,7 +6,7 @@ from scipy.sparse import csc_matrix
 
 prob_stay = 0.1
 out = 1.0 - prob_stay
-num_iter = 64
+num_iter = 256
 
 
 driver = GraphDatabase.driver("bolt://localhost", auth = basic_auth("neo4j", "mliu60"))
