@@ -1,4 +1,3 @@
-import demjson
 import json
 from flask import Flask, request
 from flask_restful import reqparse, abort, Api, Resource
@@ -27,7 +26,7 @@ class BasicInfo(Resource):
 		except:
 			raise ValueError("%s does not exist in database" % node)
 
-		return demjson.encode({nodeType: result[0][nodeType], 'pagerank': result[0]['PR']})
+		return json.dumps({nodeType: result[0][nodeType], 'pagerank': result[0]['PR']})
 
 
 class RecommendPtoR(Resource):
