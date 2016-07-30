@@ -11,9 +11,9 @@ reload(sys)
 sys.setdefaultencoding('utf-8')
 
 
-Paper = namedtuple("Paper", "paperID, title, year, pagerank, label")
-Researcher = namedtuple("Researcher", "name, pagerank, label")
-Conference = namedtuple("Conference", "conference, pagerank, label")
+Paper = namedtuple("Paper", "paperID, title, year, label")
+Researcher = namedtuple("Researcher", "name, label")
+Conference = namedtuple("Conference", "conference, label")
 AuthorOf = namedtuple("AuthorOf", "name, paperID, type")
 PublishAt = namedtuple("PublishAt", "paperID, conference, type")
 Reference = namedtuple("Reference", "paperID, sourceID, type")
@@ -28,7 +28,6 @@ reference = []
 dict_researcher = set()
 dict_conference = set()
 dict_paper = set()
-dict_badpaper = set()
 
 
 def strip_comma(input):
@@ -51,13 +50,12 @@ def parse():
 			if line.startswith('#*'):
 				title = strip_comma(line[2:])
 
-
 			elif line.startswith('#@'):
 				authors = line[2:].split(', ')
 				for author in authors:
 					if author not in dict_researcher:
 						dict_researcher.add(author)
-						researchers.append(Researcher(author, 0, "Researcher"))
+						researchers.append(Researcher(author, "Researcher"))
 
 			elif line.startswith('#t'):
 				year = line[2:]
@@ -66,7 +64,7 @@ def parse():
 				conference = line[2:]
 				if conference not in dict_conference:
 					dict_conference.add(conference)
-					conferences.append(Conference(conference, 0, "Conference"))
+					conferences.append(Conference(conference, "Conference"))
 
 			elif line.startswith('#index'):
 				paperID = line[6:]
@@ -75,12 +73,8 @@ def parse():
 					paperID = format(newpaperID, 'x')
 					newpaperID += 1
 
-				if title.startswith("Proceedings"):
-					dict_badpaper.add(paperID)
-					continue
-
 				dict_paper.add(paperID)
-				papers.append(Paper(paperID, title, year, 0, "Paper"))
+				papers.append(Paper(paperID, title, year, "Paper"))
 
 				if conference != None:
 					publishat.append(PublishAt(paperID, conference, "PublishAt"))
@@ -98,8 +92,7 @@ def parse():
 
 			elif line.startswith('#%'):
 				citeID = line[2:]
-				if citeID not in dict_badpaper and paperID not in dict_badpaper:
-					reference.append(Reference(paperID, citeID, "Reference"))
+				reference.append(Reference(paperID, citeID, "Reference"))
 
 	f.close()
 
@@ -109,15 +102,13 @@ Format required by neo4j
 Do not change orders, node should be inserted before inserting edges
 '''
 def to_csv():
-	df = pd.DataFrame(papers, columns = ["paperID:ID", "title", "year", "pagerank", ":LABEL"])
+	df = pd.DataFrame(papers, columns = ["paperID:ID", "title", "year", ":LABEL"])
 	df.to_csv("data/Paper.csv", index = False, encoding = 'utf-8')
 
-	researchers = [Researcher(name, 0, "Researcher") for name in dict_researcher]	
-	df = pd.DataFrame(researchers, columns = ["name:ID", "pagerank", ":LABEL"])
+	df = pd.DataFrame(researchers, columns = ["name:ID", ":LABEL"])
 	df.to_csv("data/Researcher.csv", index = False, encoding = 'utf-8')
 
-	conferences = [Conference(conference, 0, "Conference") for conference in dict_conference]	
-	df = pd.DataFrame(conferences, columns = ["conference:ID", "pagerank", ":LABEL"])
+	df = pd.DataFrame(conferences, columns = ["conference:ID", ":LABEL"])
 	df.to_csv("data/Conference.csv", index = False, encoding = 'utf-8')
 
 	df = pd.DataFrame(authorof, columns = [":START_ID", ":END_ID", ":TYPE"])

@@ -1,3 +1,4 @@
+import gc
 import numpy as np
 import networkx as nx
 from neo4j.v1 import GraphDatabase, basic_auth
@@ -36,13 +37,20 @@ for i in range(num_node / per_session + 1):
 	for edge in list(session.run("match (src)-->(dest) where ID(src) >= %d and ID(src) < %d "\
 								 "return ID(src) as srcID, ID(dest) as destID" % (lower, upper))):
 		G.add_edge(edge['srcID'], edge['destID'])
+	break
 print "Finish setting up graph"
 
-rank = nx.pagerank_scipy(G, alpha = 0.9, tol = 1e-6, max_iter = 256)
+rank = nx.pagerank_scipy(G, alpha = 0.9, tol = 1e-8, max_iter = 256)
 print "Finish ranking"
 
-for k, v in rank.iteritems():
-	session.run("match (n) where ID(n) = %d set n.pagerank = %f" % (k, v * 100))
+del G
+gc.collect()
+
+rank = np.array(rank.items())
+
+for pair in rank:
+	session.run("match (n) where ID(n) = %d set n.pagerank = %f" % (pair[0], pair[1] * 100))
+	del pair
 print "Finish updating page rank"
 
 session.close()
