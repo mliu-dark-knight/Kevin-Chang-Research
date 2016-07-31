@@ -14,6 +14,7 @@ import numpy as np
 import networkx as nx
 import node2vec
 from gensim.models import Word2Vec
+from gensim.models.word2vec import LineSentence
 from neo4j.v1 import GraphDatabase, basic_auth
 
 epoch = 50000
@@ -27,6 +28,9 @@ def parse_args():
 
 	parser.add_argument('--input', nargs='?', default='karate.edgelist',
 	                    help='Input graph path')
+
+	parser.add_argument('--corpus', nargs='?', default='corpus.txt',
+	                    help='Simulated context using random walk')
 
 	parser.add_argument('--output', nargs='?', default='karate.emb',
 	                    help='Embeddings path')
@@ -85,13 +89,13 @@ def read_graph():
 
 	return G
 
-def learn_embeddings(walks):
+def learn_embeddings(filename):
 	'''
 	Learn embeddings by optimizing the Skipgram objective using SGD.
 	'''
 	print "Learning embeddings"
-	walks = [map(str, walk) for walk in walks]
-	model = Word2Vec(walks, size=args.dimensions, window=args.window_size, min_count=0, 
+	corpus = LineSentence(filename)
+	model = Word2Vec(corpus, size=args.dimensions, window=args.window_size, min_count=0, 
 		workers=args.workers, iter=args.iter)
 	model.save_word2vec_format(args.output)
 	
@@ -105,20 +109,10 @@ def create_input():
 			lower = i * epoch
 			upper = (i+1) * epoch
 			for edge in list(session.run("match (src)-->(dest) where ID(src) >= %d and ID(src) < %d "\
-										 "return ID(src) as srcID, ID(dest) as destID, src.pagerank as srcR, dest.pagerank as destR" % (lower, upper))):
+										 "return ID(src) as srcID, ID(dest) as destID" % (lower, upper))):
 				srcID = edge['srcID']
 				destID = edge['destID']
-
-				if args.weighted:
-					srcR = edge['srcR']
-					destR = edge['destR']
-					weight = srcR + destR
-					if weight == 0:
-						weight = 10**(-6)
-					f.write(str(srcID) + ' ' + str(destID) + ' ' + str(weight) + '\n')
-				else:
-					f.write(str(srcID) + ' ' + str(destID) + '\n')
-
+				f.write(str(srcID) + ' ' + str(destID) + '\n')
 	f.close()
 
 
@@ -137,18 +131,16 @@ def main(args):
 	Pipeline for representational learning for all nodes in a graph.
 	'''
 	create_input()
-	nx_G = read_graph()
-	G = node2vec.Graph(nx_G, args.directed, args.p, args.q)
-	del nx_G
-	gc.collect()
-	G.preprocess_transition_probs()
-	walks = G.simulate_walks(args.num_walks, args.walk_length)
-	del G
-	gc.collect()
-	learn_embeddings(walks)
-	del walks
-	gc.collect()
-	save_output()
+	# nx_G = read_graph()
+	# G = node2vec.Graph(nx_G, args.directed, args.p, args.q)
+	# del nx_G
+	# gc.collect()
+	# G.preprocess_transition_probs()
+	# G.simulate_walks(args.num_walks, args.walk_length, args.corpus)
+	# del G
+	# gc.collect()
+	# learn_embeddings(args.corpus)
+	# save_output()
 
 
 driver = GraphDatabase.driver("bolt://localhost", auth = basic_auth("neo4j", "mliu60"))

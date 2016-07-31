@@ -5,6 +5,8 @@ import random
 
 class Graph():
 	def __init__(self, nx_G, is_directed, p, q):
+		assert not is_directed
+		assert p == 1 and q == 1
 		self.G = nx_G
 		self.is_directed = is_directed
 		self.p = p
@@ -16,7 +18,6 @@ class Graph():
 		'''
 		G = self.G
 		alias_nodes = self.alias_nodes
-		alias_edges = self.alias_edges
 
 		walk = [start_node]
 
@@ -24,54 +25,29 @@ class Graph():
 			cur = walk[-1]
 			cur_nbrs = sorted(G.neighbors(cur))
 			if len(cur_nbrs) > 0:
-				if len(walk) == 1:
-					walk.append(cur_nbrs[alias_draw(alias_nodes[cur][0], alias_nodes[cur][1])])
-				else:
-					prev = walk[-2]
-					next = cur_nbrs[alias_draw(alias_edges[(prev, cur)][0], 
-						alias_edges[(prev, cur)][1])]
-					walk.append(next)
+				walk.append(cur_nbrs[alias_draw(alias_nodes[cur][0], alias_nodes[cur][1])])
 			else:
 				break
 
 		return walk
 
-	def simulate_walks(self, num_walks, walk_length):
+	def simulate_walks(self, num_walks, walk_length, filename):
 		'''
 		Repeatedly simulate random walks from each node.
 		'''
 		G = self.G
-		walks = []
 		nodes = list(G.nodes())
 		print 'Walk iteration:'
-		for walk_iter in range(num_walks):
-			print str(walk_iter+1), '/', str(num_walks)
-			random.shuffle(nodes)
-			for node in nodes:
-				walks.append(self.node2vec_walk(walk_length=walk_length, start_node=node))
+		with open(filename, 'w') as f:
+			for walk_iter in range(num_walks):
+				print str(walk_iter+1), '/', str(num_walks)
+				random.shuffle(nodes)
+				for node in nodes:
+					if walk_iter <= G.degree(node):
+						walk = self.node2vec_walk(walk_length=walk_length, start_node=node)
+						f.write(' '.join(map(str, walk)) + '\n')
 
-		return walks
-
-	def get_alias_edge(self, src, dst):
-		'''
-		Get the alias edge setup lists for a given edge.
-		'''
-		G = self.G
-		p = self.p
-		q = self.q
-
-		unnormalized_probs = []
-		for dst_nbr in sorted(G.neighbors(dst)):
-			if dst_nbr == src:
-				unnormalized_probs.append(G[dst][dst_nbr]['weight']/p)
-			elif G.has_edge(dst_nbr, src):
-				unnormalized_probs.append(G[dst][dst_nbr]['weight'])
-			else:
-				unnormalized_probs.append(G[dst][dst_nbr]['weight']/q)
-		norm_const = sum(unnormalized_probs)
-		normalized_probs =  [float(u_prob)/norm_const for u_prob in unnormalized_probs]
-
-		return alias_setup(normalized_probs)
+		return
 
 	def preprocess_transition_probs(self):
 		'''
@@ -79,28 +55,17 @@ class Graph():
 		'''
 		print "Preprocessing transitions probabilities"
 		G = self.G
-		is_directed = self.is_directed
 
 		alias_nodes = {}
+
 		for node in G.nodes():
-			unnormalized_probs = [G[node][nbr]['weight'] for nbr in sorted(G.neighbors(node))]
+			neighbors = G.neighbors(node)
+			unnormalized_probs = [G[node][nbr]['weight'] for nbr in sorted(neighbors)]
 			norm_const = sum(unnormalized_probs)
 			normalized_probs =  [float(u_prob)/norm_const for u_prob in unnormalized_probs]
 			alias_nodes[node] = alias_setup(normalized_probs)
 
-		alias_edges = {}
-		triads = {}
-
-		if is_directed:
-			for edge in G.edges():
-				alias_edges[edge] = self.get_alias_edge(edge[0], edge[1])
-		else:
-			for edge in G.edges():
-				alias_edges[edge] = self.get_alias_edge(edge[0], edge[1])
-				alias_edges[(edge[1], edge[0])] = self.get_alias_edge(edge[1], edge[0])
-
 		self.alias_nodes = alias_nodes
-		self.alias_edges = alias_edges
 
 		return
 
