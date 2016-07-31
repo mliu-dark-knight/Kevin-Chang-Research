@@ -46,7 +46,7 @@ class Graph():
 					if walk_iter <= G.degree(node):
 						walk = self.node2vec_walk(walk_length=walk_length, start_node=node)
 						f.write(' '.join(map(str, walk)) + '\n')
-
+		f.close()
 		return
 
 	def preprocess_transition_probs(self):
