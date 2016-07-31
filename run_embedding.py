@@ -123,7 +123,7 @@ def save_output():
 			line = line[:-1].split(' ', 1)
 			nodeID = int(line[0])
 			vec = line[1]
-			session.run("match (n) where ID(n) = %d set n.vector = '%s'" % (nodeID, vec))
+			session.run("match (n) where ID(n) = %d set n.node2vec = '%s'" % (nodeID, vec))
 	f.close()
 
 def main(args):
