@@ -39,16 +39,16 @@ def parse_args():
 	                    help='Number of dimensions. Default is 64.')
 
 	parser.add_argument('--walk-length', type=int, default=4,
-	                    help='Length of walk per source. Default is 10.')
+	                    help='Length of walk per source. Default is 4.')
 
-	parser.add_argument('--num-walks', type=int, default=16,
-	                    help='Number of walks per source. Default is 40.')
+	parser.add_argument('--num-walks', type=int, default=64,
+	                    help='Number of walks per source. Default is 64.')
 
 	parser.add_argument('--window-size', type=int, default=4,
-                    	help='Context size for optimization. Default is 10.')
+                    	help='Context size for optimization. Default is 4.')
 
-	parser.add_argument('--iter', default=1, type=int,
-                      help='Number of epochs in SGD')
+	parser.add_argument('--iter', default=8, type=int,
+                      help='Number of epochs in SGD. Default is 8')
 
 	parser.add_argument('--workers', type=int, default=8,
 	                    help='Number of parallel workers. Default is 8.')
@@ -119,7 +119,7 @@ def create_input():
 def save_output():
 	print "Saving output to db"
 	with open(args.output, 'r') as f:
-		for line in f:
+		for line in f[1:]:
 			line = line[:-1].split(' ', 1)
 			nodeID = int(line[0])
 			vec = line[1]
