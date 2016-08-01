@@ -80,9 +80,9 @@ class pprPaperToResearcher(recommend):
 			self.G.add_edges_from([(path["ID0"], path["ID1"]), (path["ID1"], path["ID2"]), (path["ID2"], path["ID3"])])
 
 	def generateCandidates(self):
-		papers = list(self.session.run("match (r:Researcher)-[*1..3]-(p:Paper) where ID(r) = %d and not (r)-[:AuthorOf]-(p) return ID(p) as ID, p.title as title, p.pagerank as PR" % self.startID))
+		papers = list(self.session.run("match (r:Researcher)-[*1..3]-(p:Paper) where ID(r) = %d and not (r)-[:AuthorOf]-(p) return ID(p) as ID, p.title as title, p.year as year, p.pagerank as PR" % self.startID))
 		for paper in papers:
-			self.candidates[paper["ID"]] = (paper["title"], paper["PR"])
+			self.candidates[paper["ID"]] = (paper["title"], paper["year"], paper["PR"])
 		
 
 class pprResearcherToPaper(recommend):
@@ -125,9 +125,9 @@ class pprPaperToPaper(recommend):
 			self.G.add_edges_from([(path["ID0"], path["ID1"]), (path["ID1"], path["ID2"])])
 
 	def generateCandidates(self):
-		papers = list(self.session.run("match (p1:Paper)-[*1..2]-(p2:Paper) where ID(p1) = %d and not ID(p1) = ID(p2) return ID(p2) as ID, p2.title as title, p2.pagerank as PR" % self.startID))
+		papers = list(self.session.run("match (p1:Paper)-[*1..2]-(p2:Paper) where ID(p1) = %d and not ID(p1) = ID(p2) return ID(p2) as ID, p2.title as title, p2.year as year, p2.pagerank as PR" % self.startID))
 		for paper in papers:
-			self.candidates[paper["ID"]] = (paper["title"], paper["PR"])
+			self.candidates[paper["ID"]] = (paper["title"], paper["year"], paper["PR"])
 
 
 

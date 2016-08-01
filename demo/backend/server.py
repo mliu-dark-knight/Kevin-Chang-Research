@@ -70,7 +70,7 @@ class RecommendPtoR(Resource):
 		name = args['name']
 		recommender = pprPaperToResearcher(session)
 		result = recommender.recommend(name)
-		return json.dumps([{'title': t, 'pagerank': r} for (t, r) in result])
+		return json.dumps([{'title': t, 'year': y, 'pagerank': r} for (t, y, r) in result])
 
 
 class RecommendRtoR(Resource):
@@ -97,7 +97,7 @@ class RecommendPtoP(Resource):
 		title = args['title']
 		recommender = pprPaperToPaper(session)
 		result = recommender.recommend(title)
-		return json.dumps([{'title': t, 'pagerank': r} for (t, r) in result])
+		return json.dumps([{'title': t, 'year': y, 'pagerank': r} for (t, y, r) in result])
 
 
 # Actually setup the Api resource routing here
