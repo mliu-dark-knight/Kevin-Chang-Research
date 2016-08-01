@@ -13,36 +13,36 @@ def printList(L):
 
 recommender = pprPaperToResearcher(session)
 print "***Recommend paper to researcher***"
-printList(recommender.recommend("Richard Socher", 3))
+printList(recommender.recommend("Richard Socher"))
 
 recommender = pprResearcherToPaper(session)
 print "***Recommend researcher to paper***"
-printList(recommender.recommend("Dynamic Memory Networks for Visual and Textual Question Answering.", 3))
+printList(recommender.recommend("Dynamic Memory Networks for Visual and Textual Question Answering."))
 
 recommender = pprPaperToPaper(session)
 print "***Recommend paper to paper***"
-printList(recommender.recommend("Dynamic Memory Networks for Visual and Textual Question Answering.", 2))
+printList(recommender.recommend("Dynamic Memory Networks for Visual and Textual Question Answering."))
 
 recommender = pprResearcherToResearcher(session)
 print "***Recommend researcher to researcher***"
-printList(recommender.recommend("Richard Socher", 4))	
+printList(recommender.recommend("Richard Socher"))	
 
 
 recommender = pprPaperToResearcher(session)
 print "***Recommend paper to researcher***"
-printList(recommender.recommend("Aviva I. Goller", 3))	
+printList(recommender.recommend("Aviva I. Goller"))	
 
 recommender = pprResearcherToPaper(session)
 print "***Recommend researcher to paper***"
-printList(recommender.recommend("Seeing Sounds and Hearing Colors: An Event-related Potential Study of Auditory-Visual Synesthesia.", 3))	
+printList(recommender.recommend("Seeing Sounds and Hearing Colors: An Event-related Potential Study of Auditory-Visual Synesthesia."))	
 
 recommender = pprPaperToPaper(session)
 print "***Recommend paper to paper***"
-printList(recommender.recommend("Seeing Sounds and Hearing Colors: An Event-related Potential Study of Auditory-Visual Synesthesia.", 2))	
+printList(recommender.recommend("Seeing Sounds and Hearing Colors: An Event-related Potential Study of Auditory-Visual Synesthesia."))	
 
 recommender = pprResearcherToResearcher(session)
 print "***Recommend researcher to researcher***"
-printList(recommender.recommend("Aviva I. Goller", 4))	
+printList(recommender.recommend("Aviva I. Goller"))	
 
 
 

@@ -69,7 +69,7 @@ class RecommendPtoR(Resource):
 		args = parser.parse_args()
 		name = args['name']
 		recommender = pprPaperToResearcher(session)
-		result = recommender.recommend(name, 3)
+		result = recommender.recommend(name)
 		return json.dumps([{'title': t, 'pagerank': r} for (t, r) in result])
 
 
@@ -78,7 +78,7 @@ class RecommendRtoR(Resource):
 		args = parser.parse_args()
 		name = args['name']
 		recommender = pprResearcherToResearcher(session)
-		result = recommender.recommend(name, 4)
+		result = recommender.recommend(name)
 		return json.dumps([{'name': n, 'pagerank': r} for (n, r) in result])
 
 
@@ -87,7 +87,7 @@ class RecommendRtoP(Resource):
 		args = parser.parse_args()
 		title = args['title']
 		recommender = pprResearcherToPaper(session)
-		result = recommender.recommend(title, 3)
+		result = recommender.recommend(title)
 		return json.dumps([{'name': n, 'pagerank': r} for (n, r) in result])
 
 
@@ -96,7 +96,7 @@ class RecommendPtoP(Resource):
 		args = parser.parse_args()
 		title = args['title']
 		recommender = pprPaperToPaper(session)
-		result = recommender.recommend(title, 2)
+		result = recommender.recommend(title)
 		return json.dumps([{'title': t, 'pagerank': r} for (t, r) in result])
 
 
