@@ -119,7 +119,8 @@ def create_input():
 def save_output():
 	print "Saving output to db"
 	with open(args.output, 'r') as f:
-		for line in f[1:]:
+		next(f)
+		for line in f:
 			line = line[:-1].split(' ', 1)
 			nodeID = int(line[0])
 			vec = line[1]

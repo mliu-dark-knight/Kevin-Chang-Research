@@ -69,7 +69,7 @@ class recommend(object):
 		
 
 
-class recommendPaperToResearcher(recommend):
+class pprPaperToResearcher(recommend):
 	def setStart(self, input):
 		self.startID = self.session.run("match (r:Researcher {name:'%s'}) return ID(r) as ID" % input).single()["ID"]
 
@@ -83,7 +83,7 @@ class recommendPaperToResearcher(recommend):
 		return True, result[0]["title"], result[0]["PR"]
 		
 
-class recommendResearcherToPaper(recommend):
+class pprResearcherToPaper(recommend):
 	def setStart(self, input):
 		self.startID = self.session.run("match (p:Paper {title:'%s'}) return ID(p) as ID" % input).single()["ID"]
 
@@ -97,7 +97,7 @@ class recommendResearcherToPaper(recommend):
 		return True, result[0]["name"], result[0]["PR"]
 
 
-class recommendResearcherToResearcher(recommend):
+class pprResearcherToResearcher(recommend):
 	def setStart(self, input):
 		self.startID = self.session.run("match (r:Researcher {name: '%s'}) return ID(r) as ID" % input).single()["ID"]
 
@@ -111,7 +111,7 @@ class recommendResearcherToResearcher(recommend):
 		return True, result[0]["name"], result[0]["PR"]
 
 
-class recommendPaperToPaper(recommend):
+class pprPaperToPaper(recommend):
 	def setStart(self, input):
 		self.startID = self.session.run("match (p:Paper {title: '%s'}) return ID(p) as ID" % input).single()["ID"]
 	

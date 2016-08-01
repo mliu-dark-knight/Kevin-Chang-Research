@@ -4,7 +4,7 @@ from flask import Flask, request
 from flask_restful import reqparse, abort, Api, Resource
 from neo4j.v1 import GraphDatabase, basic_auth
 from scipy.spatial.distance import cityblock, euclidean, cosine
-from personalized_pagerank import recommendPaperToResearcher, recommendResearcherToResearcher, recommendResearcherToPaper, recommendPaperToPaper
+from personalized_pagerank import pprPaperToResearcher, pprResearcherToResearcher, pprResearcherToPaper, pprPaperToPaper
 
 
 app = Flask(__name__)
@@ -68,7 +68,7 @@ class RecommendPtoR(Resource):
 	def get(self):
 		args = parser.parse_args()
 		name = args['name']
-		recommender = recommendPaperToResearcher(session)
+		recommender = pprPaperToResearcher(session)
 		result = recommender.recommend(name, 3)
 		return json.dumps([{'title': t, 'pagerank': r} for (t, r) in result])
 
@@ -77,7 +77,7 @@ class RecommendRtoR(Resource):
 	def get(self):
 		args = parser.parse_args()
 		name = args['name']
-		recommender = recommendResearcherToResearcher(session)
+		recommender = pprResearcherToResearcher(session)
 		result = recommender.recommend(name, 4)
 		return json.dumps([{'name': n, 'pagerank': r} for (n, r) in result])
 
@@ -86,7 +86,7 @@ class RecommendRtoP(Resource):
 	def get(self):
 		args = parser.parse_args()
 		title = args['title']
-		recommender = recommendResearcherToPaper(session)
+		recommender = pprResearcherToPaper(session)
 		result = recommender.recommend(title, 3)
 		return json.dumps([{'name': n, 'pagerank': r} for (n, r) in result])
 
@@ -95,7 +95,7 @@ class RecommendPtoP(Resource):
 	def get(self):
 		args = parser.parse_args()
 		title = args['title']
-		recommender = recommendPaperToPaper(session)
+		recommender = pprPaperToPaper(session)
 		result = recommender.recommend(title, 2)
 		return json.dumps([{'title': t, 'pagerank': r} for (t, r) in result])
 
