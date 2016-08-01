@@ -14,7 +14,6 @@ class recommend(object):
 		self.startID = -1
 		self.G = nx.Graph()
 		self.candidates = {}
-		self.threshold = 0.25
 		self.session = session
 
 	@abstractmethod
@@ -29,12 +28,12 @@ class recommend(object):
 	def generateCandidates(self):
 		pass
 
+	@abstractmethod
+	def shouldRecommend(self, candidateID):
+		pass
+
 	def getProperty(self, candidateID):
 		return self.candidates[candidateID]
-
-	def shouldRecommend(self, candidateID):
-		rank = self.rank[candidateID]
-		return rank >= self.threshold / len(self.G)
 
 	def initilizePersonalization(self):
 		for node in self.G.nodes():
@@ -83,6 +82,10 @@ class pprPaperToResearcher(recommend):
 		papers = list(self.session.run("match (r:Researcher)-[*1..3]-(p:Paper) where ID(r) = %d and not (r)-[:AuthorOf]-(p) return ID(p) as ID, p.title as title, p.year as year, p.pagerank as PR" % self.startID))
 		for paper in papers:
 			self.candidates[paper["ID"]] = (paper["title"], paper["year"], paper["PR"])
+
+	def shouldRecommend(self, candidateID):
+		rank = self.rank[candidateID]
+		return rank >= 0.25 / len(self.G)
 		
 
 class pprResearcherToPaper(recommend):
@@ -99,6 +102,10 @@ class pprResearcherToPaper(recommend):
 		for researcher in researchers:
 			self.candidates[researcher["ID"]] = (researcher["name"], researcher["PR"])
 
+	def shouldRecommend(self, candidateID):
+		rank = self.rank[candidateID]
+		return rank >= 0.5 / len(self.G)
+
 
 class pprResearcherToResearcher(recommend):
 	def setStart(self, input):
@@ -114,6 +121,10 @@ class pprResearcherToResearcher(recommend):
 		for researcher in researchers:
 			self.candidates[researcher["ID"]] = (researcher["name"], researcher["PR"])
 
+	def shouldRecommend(self, candidateID):
+		rank = self.rank[candidateID]
+		return rank >= 0.5 / len(self.G)
+
 
 class pprPaperToPaper(recommend):
 	def setStart(self, input):
@@ -128,6 +139,10 @@ class pprPaperToPaper(recommend):
 		papers = list(self.session.run("match (p1:Paper)-[*1..2]-(p2:Paper) where ID(p1) = %d and not ID(p1) = ID(p2) return ID(p2) as ID, p2.title as title, p2.year as year, p2.pagerank as PR" % self.startID))
 		for paper in papers:
 			self.candidates[paper["ID"]] = (paper["title"], paper["year"], paper["PR"])
+
+	def shouldRecommend(self, candidateID):
+		rank = self.rank[candidateID]
+		return rank >= 0.25 / len(self.G)
 
 
 
