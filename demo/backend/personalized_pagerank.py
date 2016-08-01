@@ -13,6 +13,7 @@ class recommend(object):
 		self.personalization = {}
 		self.startID = -1
 		self.G = nx.Graph()
+		self.candidates = {}
 		self.threshold = 0.25
 		self.session = session
 
@@ -21,43 +22,35 @@ class recommend(object):
 		pass
 
 	@abstractmethod
-	def getProperty(self, ID, srcID, rank):
+	def constructGraph(self):
 		pass
+
+	@abstractmethod
+	def generateCandidates(self):
+		pass
+
+	def getProperty(self, candidateID):
+		return self.candidates[candidateID]
 
 	def recommend(self, input, step):
 		self.setStart(input)
 		assert self.startID > -1
 		assert not self.personalization
+		assert not self.candidates
 		self.personalization[self.startID] = 1.0
-		listID = [self.startID]
-
-		for i in range(step):
-			nextID = []
-			for src in listID:
-				for dest in list(self.session.run("match (src)-[]-(dest) where ID(src) = %d return distinct(ID(dest)) as ID" % src)):
-					dest = dest['ID']
-					if dest not in self.personalization:
-						self.G.add_edge(src, dest)
-						self.personalization[dest] = 0.0
-						nextID.append(dest)
-			listID = nextID
-
+		self.constructGraph()
+		self.generateCandidates()
 		# self.visualize()
-		self.rank = nx.pagerank_scipy(self.G, alpha = 0.9, personalization = self.personalization, tol = 1e-4, max_iter = 256)
+		self.rank = nx.pagerank_scipy(self.G, alpha = 0.9, personalization = self.personalization, tol = 1e-8, max_iter = 256)
 		# self.showRank()
 		return self.filterResult()
 
 	def filterResult(self):
 		recommendationList = []
 		for k, v in self.rank.iteritems():
-			shouldRecommend, prop, pgr = self.getProperty(k, self.startID, v)
+			shouldRecommend, prop, pgr = self.getProperty(k, v)
 			if shouldRecommend:
 				recommendationList.append((prop, pgr))
-
-		'''
-		for item in recommendationList:
-			print item
-		'''
 		return recommendationList
 
 	def showRank(self):
@@ -71,57 +64,40 @@ class recommend(object):
 
 class pprPaperToResearcher(recommend):
 	def setStart(self, input):
-		self.startID = self.session.run("match (r:Researcher {name:'%s'}) return ID(r) as ID" % input).single()["ID"]
+		self.startID = getResearcherByName(input, self.session)
 
-	def getProperty(self, ID, srcID, rank):
-		if len(list(self.session.run("match (p:Paper)-[a:AuthorOf]-(r:Researcher) where ID(p) = %d and ID(r) = %d return a" % (ID, srcID)))) != 0:
-			return False, None, None
-		result = list(self.session.run("match (p:Paper) where ID(p) = %d return p.title as title, p.pagerank as PR" % ID))
-		if len(result) == 0 or rank < self.threshold / len(self.G):
-			return False, None, None
-		assert len(result) == 1
-		return True, result[0]["title"], result[0]["PR"]
+	def generateCandidates(self):
+		papers = list(self.session.run("match (r:Researcher)-[*1..3]-(p:Paper) where ID(r) = %d and not (r)-[:AuthorOf]-(p) return ID(p) as ID, p.title as title, p.pagerank as PR" % self.startID))
+		for paper in papers:
+			self.candidates[paper["ID"]] = (paper["title"], paper["PR"])
 		
 
 class pprResearcherToPaper(recommend):
 	def setStart(self, input):
-		self.startID = self.session.run("match (p:Paper {title:'%s'}) return ID(p) as ID" % input).single()["ID"]
+		self.startID = getPaperByTitle(input, self.session)
 
-	def getProperty(self, ID, srcID, rank):
-		if len(list(self.session.run("match (p:Paper)-[a:AuthorOf]-(r:Researcher) where ID(r) = %d and ID(p) = %d return a" % (ID, srcID)))) != 0:
-			return False, None, None
-		result = list(self.session.run("match (r:Researcher) where ID(r) = %d return r.name as name, r.pagerank as PR" % ID))
-		if len(result) == 0 or rank < self.threshold / len(self.G):
-			return False, None, None
-		assert len(result) == 1
-		return True, result[0]["name"], result[0]["PR"]
+	def generateCandidates(self):
+		researchers = list(self.session.run("match (p:Paper)-[*1..3]-(r:Researcher) where ID(p) = %d and not (p)-[:AuthorOf]-(p) return ID(r) as ID, r.name as name, r.pagerank as PR" % self.startID))
+		for researcher in researchers:
+			self.candidates[researcher["ID"]] = (researcher["name"], researcher["PR"])
 
 
 class pprResearcherToResearcher(recommend):
 	def setStart(self, input):
-		self.startID = self.session.run("match (r:Researcher {name: '%s'}) return ID(r) as ID" % input).single()["ID"]
-
-	def getProperty(self, ID, srcID, rank):
-		if ID == srcID:
-			return False, None, None
-		result = list(self.session.run("match (r:Researcher) where ID(r) = %d return r.name as name, r.pagerank as PR" % ID))
-		if len(result) == 0 or rank < self.threshold / len(self.G):
-			return False, None, None
-		assert len(result) == 1
-		return True, result[0]["name"], result[0]["PR"]
+		self.startID = getResearcherByName(input, self.session)
 
 
 class pprPaperToPaper(recommend):
 	def setStart(self, input):
-		self.startID = self.session.run("match (p:Paper {title: '%s'}) return ID(p) as ID" % input).single()["ID"]
-	
-	def getProperty(self, ID, srcID, rank):
-		if ID == srcID:
-			return False, None, None
-		result = list(self.session.run("match (p:Paper) where ID(p) = %d return p.title as title, p.pagerank as PR" % ID))
-		if len(result) == 0 or rank < self.threshold / len(self.G):
-			return False, None, None
-		assert len(result) == 1
-		return True, result[0]["title"], result[0]["PR"]
+		self.startID = getPaperByTitle(input, self.session)
+
+
+
+def getResearcherByName(name, session):
+	return session.run("match (r:Researcher {name:'%s'}) return ID(r) as ID" % name).single()["ID"]
+
+
+def getPaperByTitle(title, session):
+	return session.run("match (p:Paper {title: '%s'}) return ID(p) as ID" % title).single()["ID"]
 
 
