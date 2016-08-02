@@ -1,9 +1,5 @@
-import numpy as np
 import networkx as nx
-import matplotlib.pyplot as plt
 from abc import ABCMeta, abstractmethod
-from scipy.sparse import csc_matrix
-from neo4j.v1 import GraphDatabase, basic_auth
 
 
 class recommend(object):
@@ -117,7 +113,7 @@ class pprResearcherToResearcher(recommend):
 			self.G.add_edges_from([(path["ID0"], path["ID1"]), (path["ID1"], path["ID2"]), (path["ID2"], path["ID3"]), (path["ID3"], path["ID4"])])
 
 	def generateCandidates(self):
-		researchers = list(self.session.run("match (r1:Researcher)-[*2..4]-(r2:Researcher) where ID(r1) = %d and not ID(r1) = ID(r2) return ID(r2) as ID, r2.name as name, r2.pagerank as PR" % self.startID))
+		researchers = list(self.session.run("match (r1:Researcher)-[*1..4]-(r2:Researcher) where ID(r1) = %d and not ID(r1) = ID(r2) return ID(r2) as ID, r2.name as name, r2.pagerank as PR" % self.startID))
 		for researcher in researchers:
 			self.candidates[researcher["ID"]] = (researcher["name"], researcher["PR"])
 
