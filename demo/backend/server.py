@@ -81,9 +81,9 @@ class Recommender(Resource):
 	def get(self):
 		args = parser.parse_args()
 		key = self.getKey(args)
-		recommender = selectRecommender(session)
+		recommender = self.getRecommender(session)
 		results = recommender.recommend(key)
-		return json.dumps([getFormt(result) for result in results])
+		return json.dumps([self.getFormt(result) for result in results])
 
 
 def researcherFormat(result):
