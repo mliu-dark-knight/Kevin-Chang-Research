@@ -83,7 +83,7 @@ class Recommender(Resource):
 		key = self.getKey(args)
 		recommender = self.getRecommender(session)
 		results = recommender.recommend(key)
-		return json.dumps([self.getFormt(result) for result in results])
+		return json.dumps([self.getFormat(result) for result in results])
 
 
 def researcherFormat(result):
@@ -101,7 +101,7 @@ class RecommendPtoR(Recommender):
 		return args['name']
 
 	def getFormat(self, result):
-		paperFormat(result)
+		return paperFormat(result)
 
 class pprRecommendPtoR(RecommendPtoR):
 	def getRecommender(self, session):
@@ -118,7 +118,7 @@ class RecommendRtoR(Recommender):
 		return args['name']
 
 	def getFormat(self, result):
-		researcherFormat(result)
+		return researcherFormat(result)
 
 class pprRecommendRtoR(RecommendRtoR):
 	def getRecommender(self, session):
@@ -135,7 +135,7 @@ class RecommendRtoP(Recommender):
 		return args['title']
 
 	def getFormat(self, result):
-		researcherFormat(result)
+		return researcherFormat(result)
 
 class pprRecommendRtoP(RecommendRtoP):
 	def getRecommender(self, session):
