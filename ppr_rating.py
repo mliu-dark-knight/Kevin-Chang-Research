@@ -6,9 +6,9 @@ from multiprocessing import Process, Manager
 from neo4j.v1 import GraphDatabase, basic_auth
 
 
-query_epoch = 50
+query_epoch = 50000
 random_walk_epoch = 50000
-num_process = 2
+num_process = 16
 
 
 def parse_args():
@@ -49,7 +49,6 @@ def construct_graph(session):
 						IDs.add(destID)
 						fn.write(str(destID) + ' ' + destType[0] + '\n')
 
-				break
 		fn.close()
 	fg.close()
 
@@ -99,7 +98,7 @@ session = driver.session()
 args = parse_args()
 open(args.vector, 'w').close()
 
-# construct_graph(session)
+construct_graph(session)
 
 manager = Manager()
 G = read_graph()
