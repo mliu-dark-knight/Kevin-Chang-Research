@@ -45,7 +45,7 @@ class recommend(object):
 		# self.visualize()
 		assert not self.personalization
 		self.initilizePersonalization()
-		self.rank = nx.pagerank_scipy(self.G, alpha = 0.9, personalization = self.personalization, tol = 1e-4, max_iter = 256)
+		self.rank = nx.pagerank_scipy(self.G, alpha = 0.9, personalization = self.personalization, tol = 1e-6, max_iter = 256)
 		# self.showRank()
 		return self.filterResult()
 
