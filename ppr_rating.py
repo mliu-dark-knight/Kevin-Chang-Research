@@ -74,6 +74,7 @@ def read_nodes():
 
 
 def create_ratings(processID, G, nodes, ratings):
+	print "Creating ratings"
 	personalization = {k: 0.0 for k in range(len(nodes))}
 	for i in range(processID, len(nodes), num_process):
 		if i % random_walk_epoch == 0:
