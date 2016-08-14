@@ -1,4 +1,5 @@
 import argparse
+import gc
 import time
 import numpy as np
 import networkx as nx
@@ -85,6 +86,9 @@ def full_ratings(processID, G, num_node, nodes, ratings):
 		personalization = {n: 0.0 for n in ego_G.nodes()}
 		personalization[r] = 1.0
 		ranks = nx.pagerank_scipy(ego_G, alpha = 0.9, personalization = personalization, tol = 1e-02,  max_iter = 64)
+		del ego_G
+		del personalization
+		gc.collect()
 		ranks = np.array(ranks.items())
 		ranks[:,1] *= 1e6
 		ranks = ranks.astype(int)
