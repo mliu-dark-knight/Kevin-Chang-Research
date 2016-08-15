@@ -66,7 +66,8 @@ def parse():
 				conference = line[2:]
 				if conference not in dict_conference:
 					dict_conference.add(conference)
-					conferences.append(Conference(conference, "Conference"))
+					if conference != "CoRR":
+						conferences.append(Conference(conference, "Conference"))
 
 			elif line.startswith('#index'):
 				paperID = line[6:]
@@ -82,7 +83,7 @@ def parse():
 				dict_paper.add(paperID)
 				papers.append(Paper(paperID, title, year, "Paper"))
 
-				if conference != None:
+				if conference != None and conference != "CoRR":
 					publishat.append(PublishAt(paperID, conference, "PublishAt"))
 
 				if authors != None:
