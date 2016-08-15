@@ -1,4 +1,5 @@
 import argparse
+import gc
 import time
 import numpy as np
 import networkx as nx
@@ -6,9 +7,10 @@ from multiprocessing import Process, Manager
 from neo4j.v1 import GraphDatabase, basic_auth
 
 
-query_epoch = 50000
-random_walk_epoch = 50000
+query_epoch = 10000
+random_walk_epoch = 10000
 num_process = 16
+num_rating = 10000
 
 
 def parse_args():
@@ -48,7 +50,7 @@ def construct_graph(session):
 					if destID not in IDs:
 						IDs.add(destID)
 						fn.write(str(destID) + ' ' + destType[0] + '\n')
-
+						
 		fn.close()
 	fg.close()
 
@@ -63,33 +65,55 @@ def read_nodes():
 	print "Reading nodes"
 	with open(args.node, 'r') as f:
 		num_node = int(f.readline())
-		nodes = charar = np.chararray(num_node)
+		nodes = np.chararray(num_node)
 		nodes[:] = 'N'
 		for line in f:
 			[nID, nType] = line[:-1].split(' ')
 			assert nID != None and nType != None
 			nodes[int(nID)] = nType
 	f.close()
-	return nodes
+	return num_node, nodes
 
 
-def create_ratings(processID, G, nodes, ratings):
+def full_ratings(processID, G, num_node, nodes, ratings):
 	print "Creating ratings"
-	personalization = {k: 0.0 for k in range(len(nodes))}
-	for i in range(processID, len(nodes), num_process):
-		if i % random_walk_epoch == 0:
-			print "Random walk epoch: %d" % (i / random_walk_epoch)
-		if nodes[i] != 'R' or G.degree(i) <= 1:
+	for r in range(processID, num_node, num_process):
+		if r % random_walk_epoch == 0:
+			print "Random walk epoch: %d" % (r / random_walk_epoch)
+		if nodes[r] != 'R':
 			continue
-		personalization[i] = 1.0
-		ranks = nx.pagerank_scipy(G, alpha = 0.9, personalization = personalization, max_iter = 128)
-		personalization[i] = 0.0
+		ego_G = nx.ego_graph(G, r, radius = 5, center = True, undirected = True)
+		personalization = {n: 0.0 for n in ego_G.nodes()}
+		personalization[r] = 1.0
+		ranks = nx.pagerank_scipy(ego_G, alpha = 0.9, personalization = personalization, tol = 1e-02,  max_iter = 64)
+		del ego_G
+		del personalization
+		gc.collect()
 		ranks = np.array(ranks.items())
 		ranks[:,1] *= 1e6
 		ranks = ranks.astype(int)
 		ranks = np.array(filter(lambda row: nodes[row[0]] == 'P' and row[1] > 0, ranks))
 		for rank in ranks:
-			ratings.append((i, rank[0], rank[1]))
+			ratings.append((r, rank[0], rank[1]))
+
+
+
+def inverseP_ratings(processID, G, num_node, nodes, ratings):
+	print "Creating ratings"
+	for r in range(processID, num_node, num_process):
+		if r % random_walk_epoch == 0:
+			print "Random walk epoch: %d" % (r / random_walk_epoch)
+		if nodes[r] != 'R':
+			continue
+		papers = np.random.choice(num_node, num_rating)
+		for p in papers:
+			if nodes[p] != 'P':
+				continue
+			for path in nx.all_simple_paths(G, source = r, target = p, cutoff = 5):
+				rating = 0.85**(len(path) - 1) * 0.15 * 1e6
+				for i in range(len(path) - 1):
+					rating /= G.degree(path[i])
+				ratings.append((r, p, rating))
 
 
 
@@ -103,14 +127,15 @@ construct_graph(session)
 
 manager = Manager()
 G = read_graph()
-nodes = read_nodes()
+num_node, nodes = read_nodes()
 ratings = manager.list()
 
 start_time = time.time()
 
 processes = []
-for i in range(num_process):
-	p = Process(target = create_ratings, args = (i, G, nodes, ratings, ))
+for j in range(num_process):
+	# p = Process(target = inverseP_ratings, args = (i, G, num_node, nodes, ratings, ))
+	p = Process(target = full_ratings, args = (j, G, num_node, nodes, ratings, ))
 	processes.append(p)
 	p.start()
 

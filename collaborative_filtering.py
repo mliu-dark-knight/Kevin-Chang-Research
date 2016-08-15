@@ -2,7 +2,7 @@ from pyspark import SparkConf, SparkContext
 from pyspark.mllib.recommendation import ALS, MatrixFactorizationModel, Rating
 
 conf = SparkConf().setAppName("collaborative filtering")
-sc = SparkContext(conf=conf)
+sc = SparkContext(conf = conf)
 
 # Load and parse the data
 data = sc.textFile("rating.txt")
