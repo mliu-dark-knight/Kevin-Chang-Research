@@ -7,9 +7,9 @@ from multiprocessing import Process, Manager
 from neo4j.v1 import GraphDatabase, basic_auth
 
 
-query_epoch = 10000
+query_epoch = 1000
 random_walk_epoch = 10000
-num_process = 16
+num_process = 4
 num_rating = 10000
 
 
@@ -36,11 +36,9 @@ def construct_graph(session):
 	with open(args.graph, 'w') as fg:
 		with open(args.node, 'w') as fn:
 			fn.write(str(num_node) + '\n')
-			for i in range(num_node / query_epoch + 1):
-				lower = i * query_epoch
-				upper = (i+1) * query_epoch
-				for edge in list(session.run("match (src)-->(dest) where ID(src) >= %d and ID(src) < %d "\
-											 "return ID(src) as srcID, labels(src) as srcType, ID(dest) as destID, labels(dest) as destType" % (lower, upper))):
+			for i in range(query_epoch):
+				for edge in list(session.run("match (src)-->(dest) where ID(src) %" + str(" %d = %d " % (query_epoch, i)) +
+											 "return ID(src) as srcID, labels(src) as srcType, ID(dest) as destID, labels(dest) as destType")):
 					srcID, destID = edge['srcID'], edge['destID']
 					srcType, destType = edge['srcType'][0], edge['destType'][0]
 					fg.write(str(srcID) + ' ' + str(destID) + '\n')
@@ -50,7 +48,7 @@ def construct_graph(session):
 					if destID not in IDs:
 						IDs.add(destID)
 						fn.write(str(destID) + ' ' + destType[0] + '\n')
-						
+
 		fn.close()
 	fg.close()
 
@@ -82,7 +80,7 @@ def full_ratings(processID, G, num_node, nodes, ratings):
 			print "Random walk epoch: %d" % (r / random_walk_epoch)
 		if nodes[r] != 'R':
 			continue
-		ego_G = nx.ego_graph(G, r, radius = 5, center = True, undirected = True)
+		ego_G = nx.ego_graph(G, r, radius = 3, center = True, undirected = True)
 		personalization = {n: 0.0 for n in ego_G.nodes()}
 		personalization[r] = 1.0
 		ranks = nx.pagerank_scipy(ego_G, alpha = 0.9, personalization = personalization, tol = 1e-02,  max_iter = 64)
