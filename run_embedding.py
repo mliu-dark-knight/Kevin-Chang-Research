@@ -47,8 +47,8 @@ def parse_args():
 	parser.add_argument('--window-size', type=int, default=4,
                     	help='Context size for optimization. Default is 4.')
 
-	parser.add_argument('--iter', default=8, type=int,
-                      help='Number of epochs in SGD. Default is 8')
+	parser.add_argument('--iter', default=16, type=int,
+                      help='Number of epochs in SGD. Default is 16')
 
 	parser.add_argument('--workers', type=int, default=8,
 	                    help='Number of parallel workers. Default is 8.')
