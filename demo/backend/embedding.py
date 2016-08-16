@@ -92,7 +92,7 @@ class node2vecPaperToPaper(recommend):
 		return list(self.session.run("match (p1:Paper)-[*1..2]-(p2:Paper) where ID(p1) = %d and not ID(p1) = ID(p2) return ID(p2) as ID, p2.title as title, p2.year as year, p2.pagerank as PR, p2.node2vec as vec" % self.startID))
 
 	def shouldRecommend(self, candidate):
-		return stringCos(candidate["vec"], self.startVec) < 8e-3
+		return stringCos(candidate["vec"], self.startVec) < 16e-2
 
 	def getProperty(self, candidate):
 		return (candidate["title"], candidate["year"], candidate["PR"])
