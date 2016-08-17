@@ -6,6 +6,7 @@ from scipy.sparse import csc_matrix
 
 prob_stay = 0.1
 out = 1.0 - prob_stay
+epoch = 50000
 num_iter = 256
 
 
@@ -42,19 +43,13 @@ data = np.empty([num_node + num_edge], dtype = float)
 
 sparse_idx = 0
 for x in range(num_node):
+	ys = list(session.run("match (src)--(dest) where ID(src) = %d return ID(dest) as ID" % x))
 
-	ys = session.run("match (src)-[]-(dest) where ID(src) = %d return ID(dest) as ID" % x)
+	if len(ys) != 0:
+		prob_out = out / len(ys)
 
-	row_buffer = []
-	data_buffer = []
-
-	for y in ys:
-		row_buffer.append(y['ID'])
-
-	if len(row_buffer) != 0:
-		prob_out = out / len(row_buffer)
-
-		for r in row_buffer:
+		for y in ys:
+			r = y['ID']
 			col[sparse_idx] = x
 			row[sparse_idx] = r
 			data[sparse_idx] = prob_out
@@ -70,8 +65,8 @@ for x in range(num_node):
 	row[sparse_idx] = x
 	sparse_idx += 1
 
-	if x % 10000 == 0:
-		print "Query epoch %d" % (x / 10000)
+	if x % epoch == 0:
+		print "Query epoch %d" % (x / epoch)
 
 
 matrix = csc_matrix((data, (row, col)), shape=(num_node, num_node))

@@ -15,7 +15,7 @@ import networkx as nx
 import node2vec
 from gensim.models import Word2Vec
 from gensim.models.word2vec import LineSentence
-from neo4j.v1 import GraphDatabase, basic_auth
+# from neo4j.v1 import GraphDatabase, basic_auth
 
 epoch = 50000
 
@@ -41,14 +41,14 @@ def parse_args():
 	parser.add_argument('--walk-length', type=int, default=4,
 	                    help='Length of walk per source. Default is 4.')
 
-	parser.add_argument('--num-walks', type=int, default=64,
+	parser.add_argument('--num-walks', type=int, default=128,
 	                    help='Number of walks per source. Default is 64.')
 
 	parser.add_argument('--window-size', type=int, default=4,
                     	help='Context size for optimization. Default is 4.')
 
-	parser.add_argument('--iter', default=16, type=int,
-                      help='Number of epochs in SGD. Default is 16')
+	parser.add_argument('--iter', default=20, type=int,
+                      help='Number of epochs in SGD. Default is 20')
 
 	parser.add_argument('--workers', type=int, default=8,
 	                    help='Number of parallel workers. Default is 8.')
@@ -131,7 +131,7 @@ def main(args):
 	'''
 	Pipeline for representational learning for all nodes in a graph.
 	'''
-	create_input()
+	# create_input()
 	nx_G = read_graph()
 	G = node2vec.Graph(nx_G, args.directed, args.p, args.q)
 	del nx_G
@@ -141,13 +141,13 @@ def main(args):
 	del G
 	gc.collect()
 	learn_embeddings(args.corpus)
-	save_output()
+	# save_output()
 
 
-driver = GraphDatabase.driver("bolt://localhost", auth = basic_auth("neo4j", "mliu60"))
-session = driver.session()
+# driver = GraphDatabase.driver("bolt://localhost", auth = basic_auth("neo4j", "mliu60"))
+# session = driver.session()
 args = parse_args()
 main(args)
-session.close()
+# session.close()
 
 
