@@ -5,6 +5,7 @@ import pandas as pd
 import htmlentitydefs
 import csv
 import sys
+import re
 
 
 reload(sys)
@@ -24,6 +25,7 @@ researchers = []
 conferences = []
 authorof = []
 publishat = []
+reference_buffer = []
 reference = []
 dict_researcher = set()
 dict_conference = set()
@@ -78,8 +80,13 @@ def parse():
 					paperID = format(newpaperID, 'x')
 					newpaperID += 1
 
-				if title.startswith("Proceedings"):
+				if ("Proceedings" in title or "Conference" in title) and re.compile("[0-9]+").search(title) != None:
 					dict_badpaper.add(paperID)
+					title = None
+					year = None
+					authors = None
+					conference = None
+					citeID = None
 					continue
 
 				dict_paper.add(paperID)
@@ -101,11 +108,15 @@ def parse():
 
 			elif line.startswith('#%'):
 				citeID = line[2:]
-				if citeID not in dict_badpaper and paperID not in dict_badpaper and citeID not in dict_reference:
+				if citeID not in dict_reference:
 					dict_reference.add(citeID)
-					reference.append(Reference(paperID, citeID, "Reference"))
+					reference_buffer.append((paperID, citeID))
 
 	f.close()
+
+	for (paperID, citeID) in reference_buffer:
+		if paperID not in dict_badpaper and citeID not in dict_badpaper:
+			reference.append(Reference(paperID, citeID, "Reference"))
 
 
 '''
