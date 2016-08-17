@@ -21,20 +21,21 @@ class recommend(object):
 		pass
 
 	@abstractmethod
-	def shouldRecommend(self, startVec, candidateVec):
-		pass
-
-	@abstractmethod
 	def getProperty(self, candidate):
 		pass
 
-	def recommend(self, input):
+	def recommend(self, input, count):
 		self.startID, self.startVec = self.getStart(input)
 		assert self.startID > -1
+		candidates = np.asarray(self.generateCandidates())
+		num_candidates = len(candidates)
+		ranks = np.empty([num_candidates, 2])
+		for i in range(num_candidates):
+			ranks[i] = [i, stringCos(candidates[i]["vec"], self.startVec)]
+		ranks = np.sort(ranks, axis = 1)[:count]
 		recommendationList = []
-		for candidate in self.generateCandidates():
-			if self.shouldRecommend(candidate):
-				recommendationList.append(self.getProperty(candidate))
+		for r in ranks:
+			recommendationList.append(self.getProperty(candidates[r[0]]))
 		return recommendationList
 
 
@@ -45,9 +46,6 @@ class node2vecPaperToResearcher(recommend):
 
 	def generateCandidates(self):
 		return list(self.session.run("match (r:Researcher)-[*1..3]-(p:Paper) where ID(r) = %d and not (r)-[:AuthorOf]-(p) return ID(p) as ID, p.title as title, p.year as year, p.pagerank as PR, p.node2vec as vec" % self.startID))
-
-	def shouldRecommend(self, candidate):
-		return stringCos(candidate["vec"], self.startVec) < 16e-2
 
 	def getProperty(self, candidate):
 		return (candidate["title"], candidate["year"], candidate["PR"])
@@ -61,9 +59,6 @@ class node2vecResearcherToPaper(recommend):
 	def generateCandidates(self):
 		return list(self.session.run("match (p:Paper)-[*1..3]-(r:Researcher) where ID(p) = %d and not (r)-[:AuthorOf]-(p) return ID(r) as ID, r.name as name, r.pagerank as PR, r.node2vec as vec" % self.startID))
 
-	def shouldRecommend(self, candidate):
-		return stringCos(candidate["vec"], self.startVec) < 16e-2
-
 	def getProperty(self, candidate):
 		return (candidate["name"], candidate["PR"])
 
@@ -76,9 +71,6 @@ class node2vecResearcherToResearcher(recommend):
 	def generateCandidates(self):
 		return list(self.session.run("match (r1:Researcher)-[*1..4]-(r2:Researcher) where ID(r1) = %d and not ID(r1) = ID(r2) return ID(r2) as ID, r2.name as name, r2.pagerank as PR, r2.node2vec as vec" % self.startID))
 
-	def shouldRecommend(self, candidate):
-		return stringCos(candidate["vec"], self.startVec) < 16e-2
-
 	def getProperty(self, candidate):
 		return (candidate["name"], candidate["PR"])
 
@@ -90,9 +82,6 @@ class node2vecPaperToPaper(recommend):
 
 	def generateCandidates(self):
 		return list(self.session.run("match (p1:Paper)-[*1..2]-(p2:Paper) where ID(p1) = %d and not ID(p1) = ID(p2) return ID(p2) as ID, p2.title as title, p2.year as year, p2.pagerank as PR, p2.node2vec as vec" % self.startID))
-
-	def shouldRecommend(self, candidate):
-		return stringCos(candidate["vec"], self.startVec) < 16e-2
 
 	def getProperty(self, candidate):
 		return (candidate["title"], candidate["year"], candidate["PR"])
