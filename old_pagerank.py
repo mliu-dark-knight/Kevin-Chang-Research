@@ -89,6 +89,9 @@ gc.collect()
 
 for i in range(num_node):
 	session.run("match (n) where ID(n) = %d set n.pagerank = %f" %(i, rank[i] * 100.0))
+	if i % epoch == 0:
+	print "Insert epoch %d" % (i / epoch)
+
 print "Finish updating page rank"
 
 
