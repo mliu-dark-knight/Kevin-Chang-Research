@@ -120,11 +120,16 @@ def save_output():
 	print "Saving output to db"
 	with open(args.output, 'r') as f:
 		next(f)
+		i = 0
 		for line in f:
 			line = line[:-1].split(' ', 1)
 			nodeID = int(line[0])
 			vec = line[1]
 			session.run("match (n) where ID(n) = %d set n.node2vec = '%s'" % (nodeID, vec))
+			if i % epoch == 0:
+				print "Insert epoch %d" % (i / epoch)
+			i += 1
+
 	f.close()
 
 def main(args):
