@@ -1,5 +1,6 @@
 from neo4j.v1 import GraphDatabase, basic_auth
-from embedding import node2vecPaperToResearcher, node2vecResearcherToResearcher, node2vecResearcherToPaper, node2vecPaperToPaper
+from embedding import node2vecPaperToResearcher, node2vecResearcherToResearcher, node2vecResearcherToPaper, node2vecPaperToPaper, \
+					  ppvPaperToResearcher, ppvResearcherToResearcher, ppvResearcherToPaper, ppvPaperToPaper
 
 
 driver = GraphDatabase.driver("bolt://localhost", auth = basic_auth("neo4j", "mliu60"))

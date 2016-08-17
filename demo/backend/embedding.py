@@ -32,15 +32,15 @@ class Recommender(object):
 	def getRank(self, candidate):
 		pass
 
-	def recommend(self, input, count):
+	def recommend(self, input, limit):
 		self.startID, self.startVec = self.getStart(input)
 		assert self.startID > -1
 		candidates = np.asarray(self.generateCandidates())
 		num_candidates = len(candidates)
 		ranks = np.empty([num_candidates, 2])
 		for i in range(num_candidates):
-			ranks[i] = [i, self.getRank]
-		ranks = np.sort(ranks, axis = 1)[:count]
+			ranks[i] = np.array([i, self.getRank])
+		ranks = np.sort(ranks, axis = 1)[:limit]
 		recommendationList = []
 		for r in ranks:
 			recommendationList.append(self.getProperty(candidates[r[0]]))
@@ -60,7 +60,6 @@ class PaperToResearcher(Recommender):
 		return (candidate["title"], candidate["year"], candidate["PR"])
 
 
-
 class ResearcherToPaper(Recommender):
 	def getStart(self, input):
 		return getPaperByTitle(input, self.session)
@@ -73,7 +72,6 @@ class ResearcherToPaper(Recommender):
 		return (candidate["name"], candidate["PR"])
 
 
-
 class ResearcherToResearcher(Recommender):
 	def getStart(self, input):
 		return getResearcherByName(input, self.session)
@@ -84,7 +82,6 @@ class ResearcherToResearcher(Recommender):
 
 	def getProperty(self, candidate):
 		return (candidate["name"], candidate["PR"])
-
 
 
 class PaperToPaper(Recommender):
@@ -106,7 +103,6 @@ class node2vecRecommender(Recommender):
 
 	def getRank(self, candidate):
 		return stringCos(candidate[self.getCandidateVec()], self.startVec)
-
 
 
 class ppvRecommender(Recommender):
