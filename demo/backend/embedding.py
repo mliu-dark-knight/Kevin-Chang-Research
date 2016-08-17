@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 from scipy.spatial.distance import cosine
 
 
-class recommend(object):
+class Recommender(object):
 	__metaclass__ = ABCMeta
 
 	def __init__(self, session):
@@ -21,7 +21,15 @@ class recommend(object):
 		pass
 
 	@abstractmethod
+	def getCandidateVec(self):
+		pass
+
+	@abstractmethod
 	def getProperty(self, candidate):
+		pass
+
+	@abstractmethod
+	def getRank(self, candidate):
 		pass
 
 	def recommend(self, input, count):
@@ -31,7 +39,7 @@ class recommend(object):
 		num_candidates = len(candidates)
 		ranks = np.empty([num_candidates, 2])
 		for i in range(num_candidates):
-			ranks[i] = [i, stringCos(candidates[i]["vec"], self.startVec)]
+			ranks[i] = [i, self.getRank]
 		ranks = np.sort(ranks, axis = 1)[:count]
 		recommendationList = []
 		for r in ranks:
@@ -40,52 +48,99 @@ class recommend(object):
 
 
 
-class node2vecPaperToResearcher(recommend):
+class PaperToResearcher(Recommender):
 	def getStart(self, input):
 		return getResearcherByName(input, self.session)
 
 	def generateCandidates(self):
-		return list(self.session.run("match (r:Researcher)-[*1..3]-(p:Paper) where ID(r) = %d and not (r)-[:AuthorOf]-(p) return ID(p) as ID, p.title as title, p.year as year, p.pagerank as PR, p.node2vec as vec" % self.startID))
+		vec = self.getCandidateVec()
+		return list(self.session.run("match (r:Researcher)-[*1..3]-(p:Paper) where ID(r) = %d and not (r)-[:AuthorOf]-(p) return ID(p) as ID, p.title as title, p.year as year, p.pagerank as PR, p.%s as %s" % (self.startID, vec, vec)))
 
 	def getProperty(self, candidate):
 		return (candidate["title"], candidate["year"], candidate["PR"])
 
 
 
-class node2vecResearcherToPaper(recommend):
+class ResearcherToPaper(Recommender):
 	def getStart(self, input):
 		return getPaperByTitle(input, self.session)
 
 	def generateCandidates(self):
-		return list(self.session.run("match (p:Paper)-[*1..3]-(r:Researcher) where ID(p) = %d and not (r)-[:AuthorOf]-(p) return ID(r) as ID, r.name as name, r.pagerank as PR, r.node2vec as vec" % self.startID))
+		vec = self.getCandidateVec()
+		return list(self.session.run("match (p:Paper)-[*1..3]-(r:Researcher) where ID(p) = %d and not (r)-[:AuthorOf]-(p) return ID(r) as ID, r.name as name, r.pagerank as PR, r.%s as %s" % (self.startID, vec, vec)))
 
 	def getProperty(self, candidate):
 		return (candidate["name"], candidate["PR"])
 
 
 
-class node2vecResearcherToResearcher(recommend):
+class ResearcherToResearcher(Recommender):
 	def getStart(self, input):
 		return getResearcherByName(input, self.session)
 
 	def generateCandidates(self):
-		return list(self.session.run("match (r1:Researcher)-[*1..4]-(r2:Researcher) where ID(r1) = %d and not ID(r1) = ID(r2) return ID(r2) as ID, r2.name as name, r2.pagerank as PR, r2.node2vec as vec" % self.startID))
+		vec = self.getCandidateVec()
+		return list(self.session.run("match (p:Paper)-[*1..4]-(r:Researcher) where ID(p) = %d and not (r)-[:AuthorOf]-(p) return ID(r) as ID, r.name as name, r.pagerank as PR, r.%s as %s" % (self.startID, vec, vec)))
 
 	def getProperty(self, candidate):
 		return (candidate["name"], candidate["PR"])
 
 
 
-class node2vecPaperToPaper(recommend):
+class PaperToPaper(Recommender):
 	def getStart(self, input):
 		return getPaperByTitle(input, self.session)
 
 	def generateCandidates(self):
-		return list(self.session.run("match (p1:Paper)-[*1..2]-(p2:Paper) where ID(p1) = %d and not ID(p1) = ID(p2) return ID(p2) as ID, p2.title as title, p2.year as year, p2.pagerank as PR, p2.node2vec as vec" % self.startID))
+		vec = self.getCandidateVec()
+		return list(self.session.run("match (r:Researcher)-[*1..2]-(p:Paper) where ID(r) = %d and not (r)-[:AuthorOf]-(p) return ID(p) as ID, p.title as title, p.year as year, p.pagerank as PR, p.%s as %s" % (self.startID, vec,vec)))
 
 	def getProperty(self, candidate):
 		return (candidate["title"], candidate["year"], candidate["PR"])
 
+
+
+class node2vecRecommender(Recommender):
+	def getCandidateVec(self):
+		return "node2vec"
+
+	def getRank(self, candidate):
+		return stringCos(candidate[self.getCandidateVec()], self.startVec)
+
+
+
+class ppvRecommender(Recommender):
+	def getCandidateVec(self):
+		return "ppv"
+
+	def getRank(self, candidate):
+		return stringDot(candidate[self.getCandidateVec()], self.startVec)
+
+
+
+class node2vecPaperToResearcher(PaperToResearcher, node2vecRecommender):
+	pass
+
+class node2vecResearcherToPaper(ResearcherToPaper, node2vecRecommender):
+	pass
+
+class node2vecResearcherToResearcher(ResearcherToResearcher, node2vecRecommender):
+	pass
+
+class node2vecPaperToPaper(PaperToPaper, node2vecRecommender):
+	pass
+
+class ppvPaperToResearcher(PaperToResearcher, ppvRecommender):
+	pass
+
+class ppvResearcherToPaper(ResearcherToPaper, ppvRecommender):
+	pass
+
+class ppvResearcherToResearcher(ResearcherToResearcher, ppvRecommender):
+	pass
+
+class ppvPaperToPaper(PaperToPaper, ppvRecommender):
+	pass
 
 
 
@@ -102,6 +157,11 @@ def getPaperByTitle(title, session):
 def stringCos(vec1, vec2):
 	vec1, vec2 = map(float, vec1.split(' ')), map(float, vec2.split(' '))
 	return cosine(vec1, vec2)
+
+def stringDot(vec1, vec2):
+	vec1, vec2 = map(float, vec1.split(' ')), map(float, vec2.split(' '))
+	return np.dot(vec1, vec2)
+
 
 
 

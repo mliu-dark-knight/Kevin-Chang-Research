@@ -6,7 +6,8 @@ from neo4j.v1 import GraphDatabase, basic_auth
 from scipy.spatial.distance import cityblock, euclidean, cosine
 from abc import ABCMeta, abstractmethod
 from personalized_pagerank import pprPaperToResearcher, pprResearcherToResearcher, pprResearcherToPaper, pprPaperToPaper
-from embedding import node2vecPaperToResearcher, node2vecResearcherToResearcher, node2vecResearcherToPaper, node2vecPaperToPaper
+from embedding import node2vecPaperToResearcher, node2vecResearcherToResearcher, node2vecResearcherToPaper, node2vecPaperToPaper, \
+					  ppvPaperToResearcher, ppvResearcherToResearcher, ppvResearcherToPaper, ppvPaperToPaper
 
 
 app = Flask(__name__)
