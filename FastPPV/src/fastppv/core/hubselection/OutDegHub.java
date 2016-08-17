@@ -8,6 +8,5 @@ public class OutDegHub extends UtilityHub {
 		this.pagerankPow = 0.0;
 		this.outDegPow = 1.0;
 	}
-	
 
 }

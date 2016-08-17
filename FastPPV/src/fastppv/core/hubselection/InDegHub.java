@@ -20,14 +20,11 @@ public class InDegHub extends HubSelection {
 	}
 
 	@Override
-
-	
 	protected void fillNodes() {
 		nodes = new ArrayList<KeyValuePair>();
 		
 		for (Node n : graph.getNodes())
 			nodes.add(new KeyValuePair(n.id, n.in.size()));
 	}
-	
 
 }

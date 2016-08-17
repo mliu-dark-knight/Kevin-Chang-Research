@@ -37,16 +37,6 @@ public class Online {
         Map<Integer, Integer > nodeClusterMap = new HashMap<Integer, Integer>();
 		TextReader inC = new TextReader(Config.communityFile);
 		String lineC;
-	/*	int comID = 0;
-		while ((lineC = inC.readln()) != null) {
-			
-			String s[] = lineC.trim().split("\t");
-			for(String nodeId: s)
-				nodeClusterMap.put(Integer.valueOf(nodeId),comID);
-			
-			comID++;
-		}*/
-
 		
 		// parsing another type of community file-cluster
 		while ((lineC = inC.readln()) != null) {

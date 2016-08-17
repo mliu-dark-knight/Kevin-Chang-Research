@@ -183,18 +183,6 @@ public class Graph {
         // System.out.print("y");
         sub.init();
         sub.computePrimePPV();
-        // System.out.print("z");
-      
-        // for counting the number of nodes/edges in each prime subgraph
-        /*for(Node n: nodes.values())
-        	if (n.inSub){
-        		nodesInsub ++;
-        		for(Node m: n.out)
-        			if (m.inSub)
-        				edgesInsub++;
-        	}
-        System.out.println(nodesInsub + " "+ edgesInsub);	*/
-        
         
         sub.reset();
         return sub.toPrimePPV();
@@ -277,32 +265,6 @@ public class Graph {
         }
     }
 
-   /* public void computeMultiPPV(List<KeyValuePair> hubs) {
-        Map<Integer, Double> map = convertPairToMap(hubs);
-        double initWeight = 1.0 / hubs.size();
-        for (Node n : nodes.values()) {
-            n.vOld = 0;
-            if (map.get(n.id) != null) {
-                n.vOld = initWeight;
-            }
-        }
-
-        for (int i = 0; i < Config.numIterations; i++) {
-            for (Node n : nodes.values()) {
-                n.vNew = 0;
-                for (Node m : n.in)
-                    n.vNew += m.outEdgeWeight * m.vOld;
-                double delta;
-                delta = (map.get(n.id) != null) ? initWeight : 0;
-
-                n.vNew = n.vNew * (1 - Config.alpha) + delta * Config.alpha;
-            }
-
-            for (Node n : nodes.values()) {
-                n.vOld = n.vNew;
-            }
-        }
-    }*/
     public void computeMultiPPV(List<Node> hubs) {
        
         double initWeight = 1.0 / hubs.size();
@@ -355,51 +317,6 @@ public class Graph {
         return ppv;
     }
 
-	/*
-     * private Node[] selectAnchors() throws Exception { List<Node> nList = new
-	 * ArrayList<Node>(nodes.values()); Random rnd = new Random(9876804367L);
-	 * HashSet<Node> anchors = new HashSet<Node>(); while (anchors.size() <
-	 * Config.numClusters) anchors.add(nList.get(rnd.nextInt(nList.size())));
-	 * 
-	 * Node[] result = new Node[Config.numClusters]; return
-	 * anchors.toArray(result); }
-	 * 
-	 * 
-	 * public void cluster() throws Exception {
-	 * System.out.println("Selecting anchors..."); Node[] anchor =
-	 * selectAnchors(); PPV[] ppv = new PPV[Config.numClusters];
-	 * 
-	 * System.out.print("Computing PPV for anchor "); for (int i = 0; i <
-	 * Config.numClusters; i++) { System.out.print(i + " ");
-	 * this.computePageRank(anchor[i].id); ppv[i] = this.toPPV(); }
-	 * System.out.println();
-	 * 
-	 * @SuppressWarnings("unchecked") HashSet<Node>[] cluster = new
-	 * HashSet[Config.numClusters]; for (int i = 0; i < anchor.length; i++)
-	 * cluster[i] = new HashSet<Node>();
-	 * 
-	 * int sizeCap = (int)(nodes.size() * Config.clusterSizeCapRatio /
-	 * Config.numClusters); for (Node n : nodes.values()) { double max = -1; int
-	 * maxI = -1; for (int i = 0; i < Config.numClusters; i++) { if
-	 * (cluster[i].size() >= sizeCap) continue; double score = ppv[i].get(n.id);
-	 * if (score > max) { max = score; maxI = i; } } cluster[maxI].add(n); }
-	 * 
-	 * // output stats System.out.println("# nodes in each cluster:"); for
-	 * (HashSet<Node> c : cluster) System.out.println(c.size());
-	 * 
-	 * // writing mapping TextWriter out = new
-	 * TextWriter(ClusterManager.getClusterMappingFile()); for (int i = 0; i <
-	 * Config.numClusters; i++) { for (Node n : cluster[i]) out.writeln(n.id +
-	 * "\t" + i); } out.close();
-	 * 
-	 * // writing clusters for (int i = 0; i < Config.numClusters; i++) {
-	 * DataWriter dout = new DataWriter(ClusterManager.getClusterFile(i));
-	 * dout.writeInteger(cluster[i].size()); for (Node n : cluster[i]) {
-	 * dout.writeInteger(n.id); dout.writeInteger(n.out.size());
-	 * dout.writeInteger(n.in.size()); for (Node m : n.out)
-	 * dout.writeInteger(m.id); for (Node m : n.in) dout.writeInteger(m.id); }
-	 * dout.close(); } }
-	 */
 
     private void splitCluster(int oldId, int newId) {
         List<Node> l = new ArrayList<Node>();
@@ -465,38 +382,7 @@ public class Graph {
     	for (Node n : nodes.values())
             n.clusterId = -1;
     	
-    	//randomly choose k centroids
-/*    	List<Node>existCentroids = new ArrayList();
-    	for (int i =0; i<k; i++){
-    		boolean existed = false;
-    		
-    		do{
-    			
-    		Node x = nodes.get(rnd.nextInt(nodes.size()));
-    		
-    		if(existCentroids == null)
-    		{
-    			x.clusterId=i;
-    			cluster[i].add(x);
-    			existCentroids.add(x);
-    			continue;    			
-    			
-    		}
-    		
-    		existed = false;
-    		for (Node n: existCentroids){
-    					
-    				if (x.id == n.id)
-    					existed = true;
-    			}
-    		}
-    		while(existed);
-    		
-    		x.clusterId=i;
-    		cluster[i].add(x);
-    		System.out.println("finding a centroid: "+x.id + " clusterId is: " + x.clusterId);    		
-      }*/
-      
+
     	List<Node> existList = new ArrayList();
     	for (int i= 0; i < k; i++) {
     		Node x = nodes.get(rnd.nextInt(nodes.size()));
@@ -601,21 +487,6 @@ public class Graph {
         }
         out.close();
 
-        // writing clusters
-		/*for (int i = 0; i < Config.numClusters; i++) {
-			DataWriter dout = new DataWriter(ClusterManager.getClusterFile(i));
-			dout.writeInteger(cluster[i].size());
-			for (Node n : cluster[i]) {
-				dout.writeInteger(n.id);
-				dout.writeInteger(n.out.size());
-				dout.writeInteger(n.in.size());
-				for (Node m : n.out)
-					dout.writeInteger(m.id);
-				for (Node m : n.in)
-					dout.writeInteger(m.id);
-			}
-			dout.close();
-		}*/
 
         //writing clustered graphs
         for (int i = 0; i < Config.numClusters; i++) {

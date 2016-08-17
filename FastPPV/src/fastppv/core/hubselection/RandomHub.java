@@ -24,7 +24,5 @@ public class RandomHub extends HubSelection {
 		for (Node n : graph.getNodes())
 			nodes.add(new KeyValuePair(n.id, rnd.nextDouble()));
 	}
-	
-	
 
 }

@@ -9,5 +9,4 @@ public class PageRankHub extends UtilityHub {
 		this.outDegPow = 0.0;
 	}
 
-
 }
