@@ -67,6 +67,7 @@ class CompareEmbedding(Resource):
 		return json.dumps({'Difference': diff, 'Manhattan Distance': l1, 'Euclidean Distance': l2, 'Cosine Distance': cos, 'Inner Product': inner})
 
 
+
 class Recommender(Resource):
 	@abstractmethod
 	def getKey(self, args):
