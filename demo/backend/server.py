@@ -15,7 +15,7 @@ api = Api(app)
 
 
 parser = reqparse.RequestParser()
-for arg in ['name', 'title', 'conference']:
+for arg in ['name', 'title', 'conference', 'limit']:
 	parser.add_argument(arg)
 
 nodes = {'Researcher': 'name', 'Paper': 'title', 'Conference': 'conference'}
@@ -82,9 +82,10 @@ class Recommender(Resource):
 
 	def get(self):
 		args = parser.parse_args()
+		limit = args['limit']
 		key = self.getKey(args)
 		recommender = self.getRecommender(session)
-		results = recommender.recommend(key)
+		results = recommender.recommend(key, limit)
 		return json.dumps([self.getFormat(result) for result in results])
 
 

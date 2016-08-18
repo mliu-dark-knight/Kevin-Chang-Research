@@ -15,7 +15,7 @@ import networkx as nx
 import node2vec
 from gensim.models import Word2Vec
 from gensim.models.word2vec import LineSentence
-# from neo4j.v1 import GraphDatabase, basic_auth
+from neo4j.v1 import GraphDatabase, basic_auth
 
 epoch = 50000
 
@@ -137,22 +137,22 @@ def main(args):
 	Pipeline for representational learning for all nodes in a graph.
 	'''
 	# create_input()
-	nx_G = read_graph()
-	G = node2vec.Graph(nx_G, args.directed, args.p, args.q)
-	del nx_G
-	gc.collect()
-	G.preprocess_transition_probs()
-	G.simulate_walks(args.num_walks, args.walk_length, args.corpus)
-	del G
-	gc.collect()
-	learn_embeddings(args.corpus)
-	# save_output()
+	# nx_G = read_graph()
+	# G = node2vec.Graph(nx_G, args.directed, args.p, args.q)
+	# del nx_G
+	# gc.collect()
+	# G.preprocess_transition_probs()
+	# G.simulate_walks(args.num_walks, args.walk_length, args.corpus)
+	# del G
+	# gc.collect()
+	# learn_embeddings(args.corpus)
+	save_output()
 
 
-# driver = GraphDatabase.driver("bolt://localhost", auth = basic_auth("neo4j", "mliu60"))
-# session = driver.session()
+driver = GraphDatabase.driver("bolt://localhost", auth = basic_auth("neo4j", "mliu60"))
+session = driver.session()
 args = parse_args()
 main(args)
-# session.close()
+session.close()
 
 
