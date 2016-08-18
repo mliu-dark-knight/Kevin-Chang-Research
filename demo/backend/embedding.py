@@ -33,18 +33,28 @@ class Recommender(object):
 	def getRank(self, candidate):
 		pass
 
+	@abstractmethod
+	def getFormat(self, candidate):
+		pass
+
 	def recommend(self, input, limit):
 		self.startID, self.startVec = self.getStart(input)
 		assert self.startID > -1
-		candidates = np.asarray(self.generateCandidates())
+		candidates = self.generateCandidates()
+		candidateList = []
 		num_candidates = len(candidates)
 		ranks = np.empty([num_candidates, 2])
-		for i in range(num_candidates):
-			ranks[i] = np.array([i, self.getRank])
+		idx = 0
+		for candidate in candidates:
+			ranks[idx] = np.array([idx, -self.getRank(candidate)])
+			candidateList.append(self.getFormat(candidate))
+			idx += 1
+		assert idx == num_candidates
+		print ranks
 		ranks = np.sort(ranks, axis = 1)[:limit]
 		recommendationList = []
 		for r in ranks:
-			recommendationList.append(self.getProperty(candidates[r[0]]))
+			recommendationList.append(self.getProperty(candidateList[int(r[0])]))
 		return recommendationList
 
 
@@ -55,10 +65,13 @@ class PaperToResearcher(Recommender):
 
 	def generateCandidates(self):
 		vec = self.getCandidateVec()
-		return list(self.session.run("match (r:Researcher)-[*1..3]-(p:Paper) where ID(r) = %d and not (r)-[:AuthorOf]-(p) return ID(p) as ID, p.title as title, p.year as year, p.pagerank as PR, p.%s as %s" % (self.startID, vec, vec)))
+		return list(self.session.run("match (r:Researcher)-[*1..3]-(p:Paper) where ID(r) = %d and not (r)-[:AuthorOf]-(p) return ID(p) as ID, p.title as title, p.year as year, p.pagerank as pagerank, p.%s as %s" % (self.startID, vec, vec)))
 
 	def getProperty(self, candidate):
-		return (candidate["title"], candidate["year"], candidate["PR"])
+		return (candidate["title"], candidate["year"], candidate["pagerank"])
+
+	def getFormat(self, candidate):
+		return paperFormat((candidate["title"], candidate["year"], candidate["pagerank"]))
 
 
 class ResearcherToPaper(Recommender):
@@ -67,10 +80,13 @@ class ResearcherToPaper(Recommender):
 
 	def generateCandidates(self):
 		vec = self.getCandidateVec()
-		return list(self.session.run("match (p:Paper)-[*1..3]-(r:Researcher) where ID(p) = %d and not (r)-[:AuthorOf]-(p) return ID(r) as ID, r.name as name, r.pagerank as PR, r.%s as %s" % (self.startID, vec, vec)))
+		return list(self.session.run("match (p:Paper)-[*1..3]-(r:Researcher) where ID(p) = %d and not (r)-[:AuthorOf]-(p) return ID(r) as ID, r.name as name, r.pagerank as pagerank, r.%s as %s" % (self.startID, vec, vec)))
 
 	def getProperty(self, candidate):
-		return (candidate["name"], candidate["PR"])
+		return (candidate["name"], candidate["pagerank"])
+
+	def getFormat(self, candidate):
+		return paperFormat((candidate["name"], candidate["pagerank"]))
 
 
 class ResearcherToResearcher(Recommender):
@@ -79,10 +95,13 @@ class ResearcherToResearcher(Recommender):
 
 	def generateCandidates(self):
 		vec = self.getCandidateVec()
-		return list(self.session.run("match (p:Paper)-[*1..4]-(r:Researcher) where ID(p) = %d and not (r)-[:AuthorOf]-(p) return ID(r) as ID, r.name as name, r.pagerank as PR, r.%s as %s" % (self.startID, vec, vec)))
+		return list(self.session.run("match (p:Paper)-[*1..4]-(r:Researcher) where ID(p) = %d and not (r)-[:AuthorOf]-(p) return ID(r) as ID, r.name as name, r.pagerank as pagerank, r.%s as %s" % (self.startID, vec, vec)))
 
 	def getProperty(self, candidate):
-		return (candidate["name"], candidate["PR"])
+		return (candidate["name"], candidate["pagerank"])
+
+	def getFormat(self, candidate):
+		return paperFormat((candidate["name"], candidate["pagerank"]))
 
 
 class PaperToPaper(Recommender):
@@ -91,10 +110,13 @@ class PaperToPaper(Recommender):
 
 	def generateCandidates(self):
 		vec = self.getCandidateVec()
-		return list(self.session.run("match (r:Researcher)-[*1..2]-(p:Paper) where ID(r) = %d and not (r)-[:AuthorOf]-(p) return ID(p) as ID, p.title as title, p.year as year, p.pagerank as PR, p.%s as %s" % (self.startID, vec,vec)))
+		return list(self.session.run("match (r:Researcher)-[*1..2]-(p:Paper) where ID(r) = %d and not (r)-[:AuthorOf]-(p) return ID(p) as ID, p.title as title, p.year as year, p.pagerank as pagerank, p.%s as %s" % (self.startID, vec,vec)))
 
 	def getProperty(self, candidate):
-		return (candidate["title"], candidate["year"], candidate["PR"])
+		return (candidate["title"], candidate["year"], candidate["pagerank"])
+
+	def getFormat(self, candidate):
+		return paperFormat((candidate["title"], candidate["year"], candidate["pagerank"]))
 
 
 
@@ -155,9 +177,20 @@ def stringCos(vec1, vec2):
 	vec1, vec2 = map(float, vec1.split(' ')), map(float, vec2.split(' '))
 	return cosine(vec1, vec2)
 
+
 def stringDot(vec1, vec2):
 	vec1, vec2 = map(float, vec1.split(' ')), map(float, vec2.split(' '))
 	return np.dot(vec1, vec2)
+
+
+def researcherFormat(result):
+	(n, r) = result
+	return {"name": n, "pagerank": r}
+
+
+def paperFormat(result):
+	(t, y, r) = result
+	return {"title": t, "year": y, "pagerank": r}
 
 
 

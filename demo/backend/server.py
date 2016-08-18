@@ -76,35 +76,19 @@ class Recommender(Resource):
 	def getRecommender(self, session):
 		pass
 
-	@abstractmethod
-	def getFormat(self, result):
-		pass
-
 	def get(self):
 		args = parser.parse_args()
-		limit = args['limit']
+		limit = int(args['limit'])
 		key = self.getKey(args)
 		recommender = self.getRecommender(session)
-		results = recommender.recommend(key, limit)
-		return json.dumps([self.getFormat(result) for result in results])
+		return json.dumps(recommender.recommend(key, limit))
 
 
-def researcherFormat(result):
-	(n, r) = result
-	return {'name': n, 'pagerank': r}
-
-
-def paperFormat(result):
-	(t, y, r) = result
-	return {'title': t, 'year': y, 'pagerank': r}
 
 
 class RecommendPtoR(Recommender):
 	def getKey(self, args):
 		return args['name']
-
-	def getFormat(self, result):
-		return paperFormat(result)
 
 class pprRecommendPtoR(RecommendPtoR):
 	def getRecommender(self, session):
@@ -120,9 +104,6 @@ class RecommendRtoR(Recommender):
 	def getKey(self, args):
 		return args['name']
 
-	def getFormat(self, result):
-		return researcherFormat(result)
-
 class pprRecommendRtoR(RecommendRtoR):
 	def getRecommender(self, session):
 		return pprResearcherToResearcher(session)
@@ -137,9 +118,6 @@ class RecommendRtoP(Recommender):
 	def getKey(self, args):
 		return args['title']
 
-	def getFormat(self, result):
-		return researcherFormat(result)
-
 class pprRecommendRtoP(RecommendRtoP):
 	def getRecommender(self, session):
 		return pprResearcherToPaper(session)
@@ -153,9 +131,6 @@ class node2vecRecommendRtoP(RecommendRtoP):
 class RecommendPtoP(Recommender):
 	def getKey(self, args):
 		return args['title']
-
-	def getFormat(self, result):
-		return paperFormat(result)
 
 class pprRecommendPtoP(RecommendPtoP):
 	def getRecommender(self, session):
