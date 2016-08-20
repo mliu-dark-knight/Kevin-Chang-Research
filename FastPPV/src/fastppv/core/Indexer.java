@@ -29,8 +29,8 @@ public class Indexer {
 					|| !(new File(IndexManager.getPrimePPVFilename(h.id)))
 							.exists()) {
 				count++;
-				if (count % 100 == 0)
-					System.out.print("+");
+				if (count % 1000 == 0)
+					System.out.println("Hub " + count);
 
 				PrimePPV ppv = graph.computePrimePPV(h);
 				sb.append("HubID: "+ h.id+" "+ppv.getCountInfo());

@@ -9,7 +9,7 @@ public class TextReader {
 	private BufferedReader in;
 	
 	public TextReader(String filename) throws Exception {
-		in = new BufferedReader(new InputStreamReader(new FileInputStream(filename), "UTF-8")); 
+		in = new BufferedReader(new InputStreamReader(new FileInputStream(filename), "UTF-8"));
 		ignoreEmptyLine = true;
 		ignoreStart = new String[0];
 	}

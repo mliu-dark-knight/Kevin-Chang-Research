@@ -18,46 +18,23 @@ public final class Config {
     public static int	 numClusters				= 3;
     public static int	 maxClusterFaults			= 10;
     public static int	 numRepetitions				= 5;
-    
-    public static String nodeFile					= "/Users/zhufanwei/Dropbox/Fast-Simrank/linkedin/graph.nodeProc";
-    public static String edgeFile					= "/Users/zhufanwei/Dropbox/Fast-Simrank/linkedin/graph.edge";
-    public static String indexDir				    = "";
-    public static String clusterDir				    = "/Users/zhufanwei/Desktop/fastppv/clusters/";
+
+    public static String prefix                     = "/Users/mengxiongliu/Desktop/ECE_CS/Kevin_Chang/FastPPV/dblp/";
+    public static String nodeFile					= prefix + "nodes";
+    public static String edgeFile					= prefix + "edges";
+    public static String indexDir				    = prefix;
+    public static String clusterDir				    = "";
     public static String communityFile				= "";
-    public static String outputDir		            = ""; 
-    public static String queryFile      		    = "";
+    public static String outputDir		            = prefix + "vectors";
+    public static String queryFile      		    = prefix + "queries";
     public static String hubType                    = "";    
     
-    public static int resultTop						= 50;
+    public static int resultTop						= 1000;
     public static int hubTop						= 100000;
-    public static int iterations                    =10;
-    public static int progressiveTopK				=100;
+    public static int iterations                    = 10;
+    public static int progressiveTopK				= 100;
     
-    static {
-        String filePath = System.getProperty("config").trim();
-        File f = new File(filePath);
-        if (!f.exists()) {
-            System.out.println("Please set the system properties first.");
-            System.exit(0);
-        }
-        
-        //System.out.println("*** config file used: " + f.getAbsolutePath() + " ***");
-        Properties prop = new Properties();
-        try {
-            prop.load(new FileInputStream(f));
-            for (Field field : Config.class.getFields()) {
-                if (field.getType().getName().equals("int"))
-                    setInt(prop, field);
-                else if (field.getType().getName().equals("double")) 
-                    setDouble(prop, field);
-                else if (field.getType().equals(String.class))
-                    setString(prop, field);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-    
+
     private static boolean hasValidProp(Properties prop, Field field) {
     	return prop.getProperty(field.getName()) != null
         	&& !prop.getProperty(field.getName()).trim().isEmpty();
@@ -91,10 +68,6 @@ public final class Config {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-    }
-
-    public static void main(String[] args) {
-    	print();
     }
 
 }

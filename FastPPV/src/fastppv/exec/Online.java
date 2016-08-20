@@ -5,11 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
-
-
-
-
 import fastppv.core.QueryProcessor;
 import fastppv.data.Graph;
 import fastppv.data.Node;
@@ -28,35 +23,7 @@ public class Online {
     	
         Graph graph = new Graph();
         graph.loadFromFile(Config.nodeFile, Config.edgeFile, true);
-      //added  begin
-        System.out.println("Parsing community...");
-        /*
-         * parse community file-mcl
-         * 
-         */
-        Map<Integer, Integer > nodeClusterMap = new HashMap<Integer, Integer>();
-		TextReader inC = new TextReader(Config.communityFile);
-		String lineC;
-		
-		// parsing another type of community file-cluster
-		while ((lineC = inC.readln()) != null) {
-			String s[] = lineC.split("\t");
-			if (s == null || s.length != 2) {
-				System.err.println("error node cluster map line:" + lineC);
-				continue;
-			}
-			nodeClusterMap.put(Integer.valueOf(s[0]), Integer.valueOf(s[1]));
-		}
-	
-        
-        //baseline file processing-- only one community
-       /* while ((lineC = inC.readln()) != null) {
-			
-			nodeClusterMap.put(Integer.valueOf(lineC.trim()), 0);
-		}
-*/        
-        inC.close();
- //added end       
+
         System.out.println("Loading queries...");
         List<Node> qNodes = new ArrayList<Node>();
         TextReader in = new TextReader(Config.queryFile);
@@ -69,7 +36,7 @@ public class Online {
         
         System.out.println("Starting query processing...");
         
-        QueryProcessor qp = new QueryProcessor(graph,nodeClusterMap); //for community-based implementation; for the basic method, use  QueryProcessor qp = new QueryProcessor(graph);
+        QueryProcessor qp = new QueryProcessor(graph); //for community-based implementation; for the basic method, use  QueryProcessor qp = new QueryProcessor(graph);
        
         TextWriter out = new TextWriter(Config.outputDir + "/" + 
         		"fastppv-" + Config.hubType + "_" + Config.numHubs + "_" + Config.eta);

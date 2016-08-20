@@ -85,19 +85,14 @@ public class SelectCommunityHubs {
 					results.get(communityId).add(n);
 				}
 			}
-			
-// print hubs in a community
+
 			for(Map.Entry<String, Integer> e: commuHubs.entrySet()){
 				String comID = e.getKey();
 				List<String> rankedNodesInCommu= results.get(comID);
-		    //    System.out.println(size +" hubs in Community "+ communityID);
 		        for(int i = 0; i < e.getValue(); i++){
 					System.out.println(rankedNodesInCommu.get(i));
 				}
 			}
-			 
-			
-//			return results;
 			
 		}
 
@@ -107,17 +102,11 @@ public class SelectCommunityHubs {
 	 * @throws Exception
 	 */
 	 public static void main(String[] args) throws Exception {
-		
-	        String clusterMappingFile = args[0];
-	        String rankedNodes = args[1];
-	        String hubsNoinComm = args[2];
-	        SelectCommunityHubs commHubs = new SelectCommunityHubs();
-	        commHubs.distributeHubs(clusterMappingFile,rankedNodes,hubsNoinComm);
-	        
-	       
-	        
-	       
-	    }
-
+		 String clusterMappingFile = args[0];
+		 String rankedNodes = args[1];
+		 String hubsNoinComm = args[2];
+		 SelectCommunityHubs commHubs = new SelectCommunityHubs();
+		 commHubs.distributeHubs(clusterMappingFile,rankedNodes,hubsNoinComm);
+	 }
 
 }

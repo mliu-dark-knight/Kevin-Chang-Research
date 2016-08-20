@@ -1,6 +1,7 @@
 package fastppv.core;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -16,7 +17,7 @@ public class QueryProcessor {
 	private Graph graph;
 	private Map<Integer, Integer> communityMap;
 
-	public QueryProcessor(Graph graph, Map<Integer, Integer> map) {
+	public QueryProcessor(Graph graph, HashMap<Integer, Integer> map) {
 		this.graph = graph;
 		this.communityMap = map;
 		/*
@@ -24,6 +25,13 @@ public class QueryProcessor {
 		 * 
 		 * System.out.println(e);
 		 */
+	}
+
+	public QueryProcessor(Graph graph) {
+		this.graph = graph;
+		communityMap = new HashMap<>();
+		for (Node n : graph.getNodes())
+			communityMap.put(n.id, n.clusterId);
 	}
 
 	public PPV query(Node q) throws Exception {
@@ -39,7 +47,7 @@ public class QueryProcessor {
 			// ppv.getCountInfo());
 
 		}
-		return doExpansionNoCorrection(ppv, q, Config.eta);
+		return doExpansion(ppv, q, Config.eta);
 	}
 
 	private PPV doExpansion(PrimePPV ppv, Node queryNode, int expansion)
