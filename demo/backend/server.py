@@ -40,6 +40,10 @@ class BasicInfo(Resource):
 
 
 class CompareEmbedding(Resource):
+	@abstractmethod
+	def getVector(self, node, nodeType, nodeKey):
+		pass
+
 	def get(self):
 		localparser = parser
 		for arg in ['node1', 'node2', 'name1', 'name2', 'title1', 'title2', 'conference1', 'conference2']:
@@ -48,23 +52,30 @@ class CompareEmbedding(Resource):
 		node1, node2 = args['node1'], args['node2']
 		nodeType1, nodeType2 = nodes[node1], nodes[node2]
 		nodeKey1, nodeKey2 = args[nodeType1 + '1'], args[nodeType2 + '2']
-		result1 = list(session.run("match (n:%s) where n.%s = '%s' return n.node2vec as node2vec" % (node1, nodeType1, nodeKey1)))
+		result1 = self.getVector(node1, nodeType1, nodeKey1)
 		try:
 			assert len(result1) == 1
 		except:
 			raise ValueError("%s does not exist in database" % node)
-		result2 = list(session.run("match (n:%s) where n.%s = '%s' return n.node2vec as node2vec" % (node2, nodeType2, nodeKey2)))
+		result2 = self.getVector(node2, nodeType2, nodeKey2)
 		try:
 			assert len(result2) == 1
 		except:
 			raise ValueError("%s does not exist in database" % node)
-
 		result1 = np.array(map(float, result1[0]['node2vec'].split(' ')))
 		result2 = np.array(map(float, result2[0]['node2vec'].split(' ')))
 		diff = ','.join(map(str, result1 - result2))
 		inner = np.inner(result1, result2)
 		l1, l2, cos = cityblock(result1, result2), euclidean(result1, result2), cosine(result1, result2)
 		return json.dumps({'Difference': diff, 'Manhattan Distance': l1, 'Euclidean Distance': l2, 'Cosine Distance': cos, 'Inner Product': inner})
+
+class CompareNode2vec(CompareEmbedding):
+	def getVector(self, node, nodeType, nodeKey):
+		return list(session.run("match (n:%s) where n.%s = '%s' return n.node2vec as node2vec" % (node, nodeType, nodeKey)))
+
+class CompareCollaborativeFiltering(CompareEmbedding):
+	def getVector(self, node, nodeType, nodeKey):
+		return list(session.run("match (n:%s) where n.%s = '%s' return n.ppv as ppv" % (node, nodeType, nodeKey)))
 
 
 
@@ -99,6 +110,10 @@ class node2vecRecommendPtoR(RecommendPtoR):
 	def getRecommender(self, session):
 		return node2vecPaperToResearcher(session)
 
+class ppvRecommendPtoR(RecommendPtoR):
+	def getRecommender(self, session):
+		return ppvPaperToResearcher
+
 
 
 class RecommendRtoR(Recommender):
@@ -112,6 +127,10 @@ class pprRecommendRtoR(RecommendRtoR):
 class node2vecRecommendRtoR(RecommendRtoR):
 	def getRecommender(self, session):
 		return node2vecResearcherToResearcher(session)
+
+class ppvRecommendRtoR(RecommendRtoR):
+	def getRecommender(self, session):
+		return ppvResearcherToResearcher
 
 
 
@@ -127,6 +146,10 @@ class node2vecRecommendRtoP(RecommendRtoP):
 	def getRecommender(self, session):
 		return node2vecResearcherToPaper(session)
 
+class ppvRecommendRtoP(RecommendRtoP):
+	def getRecommender(self, session):
+		return ppvResearcherToPaper
+
 
 
 class RecommendPtoP(Recommender):
@@ -141,6 +164,10 @@ class node2vecRecommendPtoP(RecommendPtoP):
 	def getRecommender(self, session):
 		return node2vecPaperToPaper(session)
 
+class ppvRecommendPtoP(RecommendPtoP):
+	def getRecommender(self, session):
+		return ppvPaperToPaper(session)
+
 
 
 # Actually setup the Api resource routing here
@@ -148,15 +175,20 @@ driver = GraphDatabase.driver("bolt://localhost", auth = basic_auth("neo4j", "ml
 session = driver.session()
 
 allApi = {'/BasicInfo': BasicInfo, 
-		  '/CompareEmbedding': CompareEmbedding, 
-		  '/pprRecommend/PtoR': pprRecommendPtoR, 
-		  '/pprRecommend/RtoR': pprRecommendRtoR, 
-		  '/pprRecommend/RtoP': pprRecommendRtoP, 
-		  '/pprRecommend/PtoP': pprRecommendPtoP, 
-		  '/node2vecRecommend/PtoR': node2vecRecommendPtoR, 
-		  '/node2vecRecommend/RtoR': node2vecRecommendRtoR, 
-		  '/node2vecRecommend/RtoP': node2vecRecommendRtoP, 
-		  '/node2vecRecommend/PtoP': node2vecRecommendPtoP
+		  '/CompareEmbedding/node2vec': CompareNode2vec,
+		  '/CompareEmbedding/ppv': CompareCollaborativeFiltering,
+		  '/pprRecommend/PtoR': pprRecommendPtoR,
+		  '/pprRecommend/RtoR': pprRecommendRtoR,
+		  '/pprRecommend/RtoP': pprRecommendRtoP,
+		  '/pprRecommend/PtoP': pprRecommendPtoP,
+		  '/node2vecRecommend/PtoR': node2vecRecommendPtoR,
+		  '/node2vecRecommend/RtoR': node2vecRecommendRtoR,
+		  '/node2vecRecommend/RtoP': node2vecRecommendRtoP,
+		  '/node2vecRecommend/PtoP': node2vecRecommendPtoP,
+		  '/ppvRecommend/PtoP': ppvRecommendPtoP,
+		  '/ppvRecommend/RtoR': ppvRecommendRtoR,
+		  '/ppvRecommend/RtoP': ppvRecommendRtoP,
+		  '/ppvRecommend/PtoP': ppvRecommendPtoP
 		 }
 for k, v in allApi.iteritems():
 	api.add_resource(v, k)

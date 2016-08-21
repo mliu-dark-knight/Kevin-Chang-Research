@@ -2,7 +2,7 @@ import networkx as nx
 from abc import ABCMeta, abstractmethod
 
 
-class recommend(object):
+class Recommender(object):
 	__metaclass__ = ABCMeta
 
 	def __init__(self, session):
@@ -36,7 +36,7 @@ class recommend(object):
 			self.personalization[node] = 0.0
 		self.personalization[self.startID] = 1.0
 
-	def recommend(self, input):
+	def recommend(self, input, limit):
 		self.setStart(input)
 		assert self.startID > -1
 		self.constructGraph()
@@ -65,7 +65,7 @@ class recommend(object):
 		
 
 
-class pprPaperToResearcher(recommend):
+class pprPaperToResearcher(Recommender):
 	def setStart(self, input):
 		self.startID = getResearcherByName(input, self.session)
 
@@ -84,7 +84,7 @@ class pprPaperToResearcher(recommend):
 		return rank >= 0.25 / len(self.G)
 		
 
-class pprResearcherToPaper(recommend):
+class pprResearcherToPaper(Recommender):
 	def setStart(self, input):
 		self.startID = getPaperByTitle(input, self.session)
 
@@ -103,7 +103,7 @@ class pprResearcherToPaper(recommend):
 		return rank >= 0.5 / len(self.G)
 
 
-class pprResearcherToResearcher(recommend):
+class pprResearcherToResearcher(Recommender):
 	def setStart(self, input):
 		self.startID = getResearcherByName(input, self.session)
 
@@ -122,7 +122,7 @@ class pprResearcherToResearcher(recommend):
 		return rank >= 0.5 / len(self.G)
 
 
-class pprPaperToPaper(recommend):
+class pprPaperToPaper(Recommender):
 	def setStart(self, input):
 		self.startID = getPaperByTitle(input, self.session)
 
