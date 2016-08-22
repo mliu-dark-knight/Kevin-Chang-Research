@@ -1,6 +1,6 @@
 import numpy as np
 from abc import ABCMeta, abstractmethod
-from scipy.spatial.distance import cosine
+from scipy.spatial.distance import cityblock, euclidean, cosine
 
 
 class Recommender(object):
@@ -12,6 +12,7 @@ class Recommender(object):
 		self.candidatesInfo = {}
 		self.candidatesVec = {}
 		self.session = session
+		self.func = {"Manhattan Distance": cityblock, "Euclidean Diatance": euclidean, "Cosine Distance": cosine, "Inner Product": np.dot}
 
 	@abstractmethod
 	def getStart(self, input):
@@ -30,22 +31,24 @@ class Recommender(object):
 		pass
 
 	@abstractmethod
-	def getRank(self, candidate):
-		pass
-
-	@abstractmethod
 	def getFormat(self, candidate, score):
 		pass
 
-	def recommend(self, input, limit):
+	def recommend(self, input, limit, rank_policy):
+		if rank_policy not in self.func:
+			raise ValueError("Ranking policy does not exist.")
 		self.startID, self.startVec = self.getStart(input)
 		assert self.startID > -1
 		candidates = self.generateCandidates()
 		candidateList = []
 		for candidate in candidates:
-			candidateList.append(self.getFormat(candidate, self.getRank(candidate)))
+			candidateList.append(self.getFormat(candidate, self.getRank(candidate, rank_policy)))
 		candidateList.sort(key = lambda c: c["score"], reverse = False)
 		return candidateList[:limit]
+
+	def getRank(self, candidate, rank_policy):
+		vec1, vec2 = map(float, self.startVec.split(' ')), map(float, self.getCandidateVec(candidate).split(' '))
+		return self.func[rank_policy](vec1, vec2)
 
 
 
@@ -112,18 +115,11 @@ class PaperToPaper(Recommender):
 
 class node2vecRecommender(Recommender):
 	def getCandidateVec(self):
-		return "node2vec"
-
-	def getRank(self, candidate):
-		return stringCos(candidate[self.getCandidateVec()], self.startVec)
-
+		return "node2vec"		
 
 class ppvRecommender(Recommender):
 	def getCandidateVec(self):
 		return "ppv"
-
-	def getRank(self, candidate):
-		return stringDot(candidate[self.getCandidateVec()], self.startVec)
 
 
 
@@ -161,16 +157,6 @@ def getResearcherByName(name, session):
 def getPaperByTitle(title, session):
 	pair = session.run("match (p:Paper {title: '%s'}) return ID(p) as ID, p.node2vec as vec" % title).single()
 	return pair["ID"], pair["vec"]
-
-
-def stringCos(vec1, vec2):
-	vec1, vec2 = map(float, vec1.split(' ')), map(float, vec2.split(' '))
-	return cosine(vec1, vec2)
-
-
-def stringDot(vec1, vec2):
-	vec1, vec2 = map(float, vec1.split(' ')), map(float, vec2.split(' '))
-	return np.dot(vec1, vec2)
 
 
 def researcherFormat(result):
