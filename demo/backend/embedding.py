@@ -12,7 +12,7 @@ class Recommender(object):
 		self.candidatesInfo = {}
 		self.candidatesVec = {}
 		self.session = session
-		self.func = {"Manhattan Distance": cityblock, "Euclidean Diatance": euclidean, "Cosine Distance": cosine, "Inner Product": np.dot}
+		self.func = {"Manhattan Distance": cityblock, "Euclidean Distance": euclidean, "Cosine Distance": cosine, "Inner Product": np.dot}
 
 	@abstractmethod
 	def getStart(self, input):
@@ -47,7 +47,7 @@ class Recommender(object):
 		return candidateList[:limit]
 
 	def getRank(self, candidate, rank_policy):
-		vec1, vec2 = map(float, self.startVec.split(' ')), map(float, self.getCandidateVec(candidate).split(' '))
+		vec1, vec2 = map(float, self.startVec.split(' ')), map(float, candidate[self.getCandidateVec()].split(' '))
 		return self.func[rank_policy](vec1, vec2)
 
 
