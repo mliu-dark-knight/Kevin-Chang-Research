@@ -1,5 +1,10 @@
 import numpy as np
 
+
+associationIdx = None
+associationRating = None
+vectors = None
+
 class CF(object):
 	def __init__(self, nodeFile, ratingFile):
 		self.nodeFile = nodeFile
