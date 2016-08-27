@@ -7,7 +7,7 @@ from multiprocessing import Process, Manager
 from neo4j.v1 import GraphDatabase, basic_auth
 
 
-query_epoch = 1000
+epoch = 50000
 random_walk_epoch = 10000
 num_process = 4
 num_rating = 10000
@@ -32,9 +32,11 @@ def construct_graph(session):
 	with open(args.graph, 'w') as fg:
 		with open(args.node, 'w') as fn:
 			fn.write(str(num_node) + '\n')
-			for i in range(query_epoch):
-				for edge in list(session.run("match (src)-->(dest) where ID(src) %" + str(" %d = %d " % (query_epoch, i)) +
-											 "return ID(src) as srcID, labels(src) as srcType, ID(dest) as destID, labels(dest) as destType")):
+			for i in range(num_node / epoch + 1):
+				lower = i * epoch
+				upper = (i+1) * epoch
+				for edge in list(session.run("match (src)-->(dest) where ID(src) >= %d and ID(src) < %d "\
+											 "return ID(src) as srcID, ID(dest) as destID, labels(src) as srcType, labels(dest) as destType" % (lower, upper))):
 					srcID, destID = edge['srcID'], edge['destID']
 					srcType, destType = edge['srcType'][0], edge['destType'][0]
 					fg.write(str(srcID) + ' ' + str(destID) + '\n')
@@ -119,25 +121,25 @@ open(args.vector, 'w').close()
 
 construct_graph(session)
 
-manager = Manager()
-G = read_graph()
-num_node, nodes = read_nodes()
-ratings = manager.list()
+# manager = Manager()
+# G = read_graph()
+# num_node, nodes = read_nodes()
+# ratings = manager.list()
 
-start_time = time.time()
+# start_time = time.time()
 
-processes = []
-for j in range(num_process):
-	p = Process(target = full_ratings, args = (j, G, num_node, nodes, ratings, ))
-	processes.append(p)
-	p.start()
+# processes = []
+# for j in range(num_process):
+# 	p = Process(target = full_ratings, args = (j, G, num_node, nodes, ratings, ))
+# 	processes.append(p)
+# 	p.start()
 
-for p in processes:
-	p.join()
+# for p in processes:
+# 	p.join()
 
-print("--- %d seconds ---" % (time.time() - start_time))
+# print("--- %d seconds ---" % (time.time() - start_time))
 
-np.savetxt(args.rating, ratings, fmt='%d', delimiter = ',')
+# np.savetxt(args.rating, ratings, fmt='%d', delimiter = ',')
 
 session.close()
 
