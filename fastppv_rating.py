@@ -20,11 +20,7 @@ def parse_args():
 
 	parser.add_argument('--node', nargs='?', default='karate.node')
 
-	parser.add_argument('--rating', nargs='?', default='rating.txt')
-
 	parser.add_argument('--vector', nargs='?', default='karate.ppv')
-
-	parser.add_argument('--dimensions', type=int, default=64)
 
 	return parser.parse_args()
 

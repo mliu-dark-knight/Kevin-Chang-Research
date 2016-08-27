@@ -1,25 +1,46 @@
-from pyspark import SparkConf, SparkContext
-from pyspark.mllib.recommendation import ALS, MatrixFactorizationModel, Rating
+import numpy as np
 
-conf = SparkConf().setAppName("collaborative filtering")
-sc = SparkContext(conf = conf)
+class CF(object):
+	def __init__(self, nodeFile, ratingFile):
+		self.nodeFile = nodeFile
+		self.ratingFile = ratingFile
+		self.associationIdx = None
+		self.associationRating = None
+		self.vectors = None
 
-# Load and parse the data
-data = sc.textFile("rating.txt")
-ratings = data.map(lambda l: l.split(',')).map(lambda l: Rating(int(l[0]), int(l[1]), float(l[2])))
+	def initialize(self):
+		with open(self.nodeFile, 'r') as f:
+			num_node = int(f.readline()[:-1])
+		f.close()
+		self.associationIdx = np.empty([num_node], list)
+		self.associationRating = np.empty([num_node], list)
+		self.vectors = np.random.rand(num_node, 64)
+		with open(self.ratingFile, 'r') as f:
+			for line in f:
+				pair = line[:-1].split(' ')
+				researcher, paper, rating = int(pair[0]), int(pair[1]), float(pair[2])
+				if self.associationIdx[researcher] is None:
+					self.associationIdx[researcher] = []
+					self.associationRating[researcher] = []
+				self.associationIdx[researcher].append(paper)
+				self.associationRating[researcher].append(rating)
+				if self.associationIdx[paper] is None:
+					self.associationIdx[paper] = []
+					self.associationRating[paper] = []
+				self.associationIdx[paper].append(researcher)
+				self.associationRating[paper].append(researcher)
+		f.close()
+		print "Finish initialization"
 
-# Build the recommendation model using Alternating Least Squares
-rank = 10
-numIterations = 10
-model = ALS.train(ratings, rank, numIterations)
 
-# Evaluate the model on training data
-testdata = ratings.map(lambda p: (p[0], p[1]))
-predictions = model.predictAll(testdata).map(lambda r: ((r[0], r[1]), r[2]))
-ratesAndPreds = ratings.map(lambda r: ((r[0], r[1]), r[2])).join(predictions)
-MSE = ratesAndPreds.map(lambda r: (r[1][0] - r[1][1])**2).mean()
-print("Mean Squared Error = " + str(MSE))
+	def fit(self):
+		pass
 
-# Save and load model
-model.save(sc, "target/tmp/myCollaborativeFilter")
-sameModel = MatrixFactorizationModel.load(sc, "target/tmp/myCollaborativeFilter")
+
+	def writeToFile(self, vectorFile):
+		with open(vectorFile, 'w') as f:
+			for i in range(len(self.vectors)):
+				f.write(str(i) + ' ' + str(self.vectors[i]))
+		f.close()
+
+
