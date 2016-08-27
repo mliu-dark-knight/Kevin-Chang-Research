@@ -32,7 +32,7 @@ def parse_args():
 	parser.add_argument('--corpus', nargs='?', default='corpus.txt',
 	                    help='Simulated context using random walk')
 
-	parser.add_argument('--output', nargs='?', default='karate.emb',
+	parser.add_argument('--output', nargs='?', default='karate.node2vec',
 	                    help='Embeddings path')
 
 	parser.add_argument('--dimensions', type=int, default=64,
