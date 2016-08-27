@@ -20,8 +20,9 @@ public final class Config {
     public static int	 numRepetitions				= 5;
 
     public static String prefix                     = "/Users/mengxiongliu/Desktop/ECE_CS/Kevin_Chang/FastPPV/dblp/";
-    public static String nodeFile					= prefix + "nodes";
-    public static String edgeFile					= prefix + "edges";
+    public static String inputprefix                 = "/Users/mengxiongliu/Desktop/ECE_CS/Kevin_Chang/";
+    public static String nodeFile					= inputprefix + "karate.node";
+    public static String edgeFile					= inputprefix + "karate.edgelist";
     public static String indexDir				    = prefix;
     public static String clusterDir				    = "";
     public static String communityFile				= "";

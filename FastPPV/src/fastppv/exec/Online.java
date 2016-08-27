@@ -26,10 +26,13 @@ public class Online {
 
         System.out.println("Loading queries...");
         List<Node> qNodes = new ArrayList<Node>();
-        TextReader in = new TextReader(Config.queryFile);
+        TextReader in = new TextReader(Config.nodeFile);
         String line;
         while ( (line = in.readln()) != null) {
-        	int id = Integer.parseInt(line);
+            String[] split = line.split(" ");
+            if (!split[1].equals("R"))
+                continue;
+        	int id = Integer.parseInt(split[0]);
         	qNodes.add(graph.getNode(id));
         }
         in.close();
@@ -43,6 +46,7 @@ public class Online {
        
         int count = 0;
         for (Node q : qNodes) {
+            String outbuffer = "";
             count++;
             if (count % 10 == 0)
             	System.out.print("+");
@@ -53,11 +57,11 @@ public class Online {
             	rankedResult = qp.query(q).getTopResult(Config.resultTop);
             }            
             long elapsed = (System.currentTimeMillis() - start) / Config.numRepetitions;
-            
-            out.write(elapsed + "ms ");
+
+            System.out.println(elapsed + "ms ");
             for (KeyValuePair e : rankedResult)
-                out.write(e.key + "_" + e.value + " ");
-            out.writeln();
+                outbuffer += (q.id + " " + e.key + " " + e.value + "\n");
+            out.write(outbuffer);
         }
         out.close();
         
