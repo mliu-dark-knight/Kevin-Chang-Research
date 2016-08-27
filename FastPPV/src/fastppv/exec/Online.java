@@ -28,6 +28,7 @@ public class Online {
         List<Node> qNodes = new ArrayList<Node>();
         TextReader in = new TextReader(Config.nodeFile);
         String line;
+        in.readln();
         while ( (line = in.readln()) != null) {
             String[] split = line.split(" ");
             if (!split[1].equals("R"))
@@ -45,26 +46,24 @@ public class Online {
         		"fastppv-" + Config.hubType + "_" + Config.numHubs + "_" + Config.eta);
        
         int count = 0;
+        String outbuffer = "";
         for (Node q : qNodes) {
-            String outbuffer = "";
             count++;
-            if (count % 10 == 0)
-            	System.out.print("+");
-            
             List<KeyValuePair> rankedResult = null;
             long start = System.currentTimeMillis();
-            for (int i = 0; i < Config.numRepetitions; i++) {
-            	rankedResult = qp.query(q).getTopResult(Config.resultTop);
-            }            
-            long elapsed = (System.currentTimeMillis() - start) / Config.numRepetitions;
+            rankedResult = qp.query(q).getTopResult(Config.resultTop);
+            long elapsed = (System.currentTimeMillis() - start);
 
-            System.out.println(elapsed + "ms ");
             for (KeyValuePair e : rankedResult)
-                outbuffer += (q.id + " " + e.key + " " + e.value + "\n");
-            out.write(outbuffer);
+                outbuffer += (q.id + " " + e.key + " " + e.value * Math.pow(10, 6) + "\n");
+            if (count % 10 == 0) {
+                out.write(outbuffer);
+                outbuffer = "";
+                System.out.println(elapsed + "ms ");
+            }
         }
         out.close();
-        
+
         System.out.println();
     }
 
