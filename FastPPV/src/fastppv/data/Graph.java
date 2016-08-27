@@ -103,6 +103,7 @@ public class Graph {
             if (count % 1000000 == 0)
                 System.out.print(".");
         }
+        System.out.println();
 
         System.out.print("Loading edges");
         count = 0;

@@ -18,7 +18,7 @@ def parse_args():
 
 	parser.add_argument('--graph', nargs='?', default='karate.edgelist')
 
-	parser.add_argument('--node', nargs='?', default='karate.nodetype')
+	parser.add_argument('--node', nargs='?', default='karate.node')
 
 	parser.add_argument('--rating', nargs='?', default='rating.txt')
 
