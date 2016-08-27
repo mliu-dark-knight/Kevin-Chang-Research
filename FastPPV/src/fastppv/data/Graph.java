@@ -92,10 +92,11 @@ public class Graph {
         TextReader inE = new TextReader(edgeFile);
         String line;
 
-        System.out.print("Loading graph");
+        System.out.print("Loading nodes");
         int count = 0;
+        inN.readln();
         while ((line = inN.readln()) != null) {
-            int id = Integer.parseInt(line);
+            int id = Integer.parseInt(line.split(" ")[0]);
             this.addNode(new Node(id));
 
             count++;
@@ -103,11 +104,14 @@ public class Graph {
                 System.out.print(".");
         }
 
+        System.out.print("Loading edges");
+        count = 0;
         while ((line = inE.readln()) != null) {
-            String[] split = line.split("\t");
+            String[] split = line.split(" ");
             int from = Integer.parseInt(split[0]);
             int to = Integer.parseInt(split[1]);
             this.addEdge(from, to);
+            this.addEdge(to, from);
 
             count++;
             if (count % 1000000 == 0)
