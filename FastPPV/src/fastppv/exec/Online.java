@@ -29,9 +29,11 @@ public class Online {
         // TextReader in = new TextReader(Config.queryFile);
         TextReader in = new TextReader(Config.nodeFile);
         String line;
-        in.readln();
+        int num_node = Integer.parseInt(in.readln());
+        char[] nodetype = new char[num_node];
         while ( (line = in.readln()) != null) {
             String[] split = line.split(" ");
+            nodetype[Integer.parseInt(split[0])] = split[1].charAt(0);
             if (!split[1].equals("R"))
                 continue;
         	int id = Integer.parseInt(split[0]);
@@ -50,14 +52,18 @@ public class Online {
         int count = 0;
         String outbuffer = "";
         for (Node q : qNodes) {
+            if (nodetype[q.id] != 'R')
+                continue;
             count++;
             List<KeyValuePair> rankedResult = null;
             long start = System.currentTimeMillis();
             rankedResult = qp.query(q).getTopResult(Config.resultTop);
             long elapsed = (System.currentTimeMillis() - start);
 
-            for (KeyValuePair e : rankedResult)
-                outbuffer += (q.id + " " + e.key + " " + e.value * Math.pow(10, 6) + "\n");
+            for (KeyValuePair e : rankedResult) {
+                if (nodetype[e.key] == 'P')
+                    outbuffer += (q.id + " " + e.key + " " + e.value * Math.pow(10, 6) + "\n");
+            }
             if (count % 10 == 0) {
                 out.write(outbuffer);
                 outbuffer = "";
