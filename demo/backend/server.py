@@ -1,6 +1,6 @@
 import json
 import numpy as np
-import networkx as nx
+from igraph import *
 from flask import Flask, request
 from flask_restful import reqparse, abort, Api, Resource
 from neo4j.v1 import GraphDatabase, basic_auth
@@ -16,18 +16,18 @@ api = Api(app)
 
 
 parser = reqparse.RequestParser()
-for arg in ['name', 'title', 'conference', 'limit', 'rank_criterion']:
-	parser.add_argument(arg)
-
 nodes = {'Researcher': 'name', 'Paper': 'title', 'Conference': 'conference'}
 
 
 class BasicInfo(Resource):
+	def __init__(self):
+		super(Resource, self).__init__()
+		self.parser = parser
+		for arg in ['node', 'name', 'title', 'conference']:
+			self.parser.add_argument(arg)
+
 	def get(self):
-		localparser = parser
-		localparser.add_argument('node')
-		nodes = {'Researcher': 'name', 'Paper': 'title', 'Conference': 'conference'}
-		args = localparser.parse_args()
+		args = self.parser.parse_args()
 		node = args['node']
 		nodeType = nodes[node]
 		nodeKey = args[nodeType]
@@ -41,15 +41,18 @@ class BasicInfo(Resource):
 
 
 class CompareEmbedding(Resource):
+	def __init__(self):
+		super(Resource, self).__init__()
+		self.parser = parser
+		for arg in ['node1', 'node2', 'name1', 'name2', 'title1', 'title2', 'conference1', 'conference2']:
+			self.parser.add_argument(arg)
+
 	@abstractmethod
 	def getVector(self, node, nodeType, nodeKey):
 		pass
 
 	def get(self):
-		localparser = parser
-		for arg in ['node1', 'node2', 'name1', 'name2', 'title1', 'title2', 'conference1', 'conference2']:
-			localparser.add_argument(arg)
-		args = localparser.parse_args()
+		args = self.parser.parse_args()
 		node1, node2 = args['node1'], args['node2']
 		nodeType1, nodeType2 = nodes[node1], nodes[node2]
 		nodeKey1, nodeKey2 = args[nodeType1 + '1'], args[nodeType2 + '2']
@@ -86,16 +89,43 @@ class Recommender(Resource):
 		pass
 
 	@abstractmethod
-	def getRecommender(self, session):
+	def getRecommender(self):
 		pass
 
+	@abstractmethod
 	def get(self):
-		args = parser.parse_args()
+		pass
+
+
+class rankBasedRecommender(Recommender):
+	def __init__(self):
+		super(Recommender, self).__init__()
+		self.parser = parser
+		for arg in ['name', 'title', 'conference', 'limit']:
+			self.parser.add_argument(arg)
+
+	def get(self):
+		args = self.parser.parse_args()
+		limit = int(args['limit'])
+		key = self.getKey(args)
+		recommender = self.getRecommender()
+		return json.dumps(recommender.recommend(key, limit))	
+
+
+class embeddingBasedRecommender(Recommender):
+	def __init__(self):
+		super(Recommender, self).__init__()
+		self.parser = parser
+		for arg in ['name', 'title', 'conference', 'limit', 'rank_criterion']:
+			self.parser.add_argument(arg)
+
+	def get(self):
+		args = self.parser.parse_args()
 		limit = int(args['limit'])
 		rank_policy = args['rank_criterion']
 		key = self.getKey(args)
-		recommender = self.getRecommender(session)
-		return json.dumps(recommender.recommend(key, limit, rank_policy))
+		recommender = self.getRecommender()
+		return json.dumps(recommender.recommend(key, limit, rank_policy))	
 
 
 
@@ -104,16 +134,16 @@ class RecommendPtoR(Recommender):
 	def getKey(self, args):
 		return args['name']
 
-class fullpprRecommendPtoR(RecommendPtoR):
-	def getRecommender(self, session):
+class fullpprRecommendPtoR(RecommendPtoR, rankBasedRecommender):
+	def getRecommender(self):
 		return fullpprPaperToResearcher(session, G)
 
-class node2vecRecommendPtoR(RecommendPtoR):
-	def getRecommender(self, session):
+class node2vecRecommendPtoR(RecommendPtoR, embeddingBasedRecommender):
+	def getRecommender(self):
 		return node2vecPaperToResearcher(session)
 
-class fastppvRecommendPtoR(RecommendPtoR):
-	def getRecommender(self, session):
+class fastppvRecommendPtoR(RecommendPtoR, embeddingBasedRecommender):
+	def getRecommender(self):
 		return fastppvPaperToResearcher
 
 
@@ -122,16 +152,16 @@ class RecommendRtoR(Recommender):
 	def getKey(self, args):
 		return args['name']
 
-class fullpprRecommendRtoR(RecommendRtoR):
-	def getRecommender(self, session):
+class fullpprRecommendRtoR(RecommendRtoR, rankBasedRecommender):
+	def getRecommender(self):
 		return fullpprResearcherToResearcher(session, G)
 
-class node2vecRecommendRtoR(RecommendRtoR):
-	def getRecommender(self, session):
+class node2vecRecommendRtoR(RecommendRtoR, embeddingBasedRecommender):
+	def getRecommender(self):
 		return node2vecResearcherToResearcher(session)
 
-class fastppvRecommendRtoR(RecommendRtoR):
-	def getRecommender(self, session):
+class fastppvRecommendRtoR(RecommendRtoR, embeddingBasedRecommender):
+	def getRecommender(self):
 		return fastppvResearcherToResearcher
 
 
@@ -140,16 +170,16 @@ class RecommendRtoP(Recommender):
 	def getKey(self, args):
 		return args['title']
 
-class fullpprRecommendRtoP(RecommendRtoP):
-	def getRecommender(self, session):
+class fullpprRecommendRtoP(RecommendRtoP, rankBasedRecommender):
+	def getRecommender(self):
 		return fullpprResearcherToPaper(session, G)
 
-class node2vecRecommendRtoP(RecommendRtoP):
-	def getRecommender(self, session):
+class node2vecRecommendRtoP(RecommendRtoP, embeddingBasedRecommender):
+	def getRecommender(self):
 		return node2vecResearcherToPaper(session)
 
-class fastppvRecommendRtoP(RecommendRtoP):
-	def getRecommender(self, session):
+class fastppvRecommendRtoP(RecommendRtoP, embeddingBasedRecommender):
+	def getRecommender(self):
 		return fastppvResearcherToPaper
 
 
@@ -158,24 +188,27 @@ class RecommendPtoP(Recommender):
 	def getKey(self, args):
 		return args['title']
 
-class fullpprRecommendPtoP(RecommendPtoP):
-	def getRecommender(self, session):
+class fullpprRecommendPtoP(RecommendPtoP, rankBasedRecommender):
+	def getRecommender(self):
 		return fullpprPaperToPaper(session, G)
 
-class node2vecRecommendPtoP(RecommendPtoP):
-	def getRecommender(self, session):
+class node2vecRecommendPtoP(RecommendPtoP, embeddingBasedRecommender):
+	def getRecommender(self):
 		return node2vecPaperToPaper(session)
 
-class fastppvRecommendPtoP(RecommendPtoP):
-	def getRecommender(self, session):
+class fastppvRecommendPtoP(RecommendPtoP, embeddingBasedRecommender):
+	def getRecommender(self):
 		return fastppvPaperToPaper(session)
+
 
 
 
 # Actually setup the Api resource routing here
 driver = GraphDatabase.driver("bolt://localhost", auth = basic_auth("neo4j", "mliu60"))
 session = driver.session()
-G = nx.read_edgelist("karate.edgelist", nodetype = int)
+
+# load graph and initialized personalization
+G = Graph.Read_Ncol('../../karate.edgelist', directed = False)
 
 allApi = {'/BasicInfo': BasicInfo, 
 		  '/CompareEmbedding/node2vec': CompareNode2vec,

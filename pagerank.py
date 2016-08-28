@@ -45,12 +45,8 @@ print "Finish ranking"
 del G
 gc.collect()
 
-rank = np.array(rank.items())
-
-for pair in rank:
-	session.run("match (n) where ID(n) = %d set n.pagerank = %f" % (pair[0], pair[1] * 100))
-	del pair
-	gc.collect()
+for key, val in rank.iteritems():
+	session.run("match (n) where ID(n) = %d set n.pagerank = %f" % (key, val * 100))
 print "Finish updating page rank"
 
 session.close()

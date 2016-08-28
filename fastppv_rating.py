@@ -54,7 +54,7 @@ def construct_graph(session):
 
 def read_graph():
 	print "Reading graph"
-	return nx.read_edgelist(args.graph, nodetype = int, create_using = nx.DiGraph()).to_undirected()
+	return nx.read_edgelist(args.graph, nodetype = int)
 
 
 def read_nodes():
@@ -94,25 +94,6 @@ def full_ratings(processID, G, num_node, nodes, ratings):
 
 
 
-def inverseP_ratings(processID, G, num_node, nodes, ratings):
-	print "Creating ratings"
-	for r in range(processID, num_node, num_process):
-		if r % random_walk_epoch == 0:
-			print "Random walk epoch: %d" % (r / random_walk_epoch)
-		if nodes[r] != 'R':
-			continue
-		papers = np.random.choice(num_node, num_rating)
-		for p in papers:
-			if nodes[p] != 'P':
-				continue
-			for path in nx.all_simple_paths(G, source = r, target = p, cutoff = 5):
-				rating = 0.85**(len(path) - 1) * 0.15 * 1e6
-				for i in range(len(path) - 1):
-					rating /= G.degree(path[i])
-				ratings.append((r, p, rating))
-
-
-
 driver = GraphDatabase.driver("bolt://localhost", auth = basic_auth("neo4j", "mliu60"))
 session = driver.session()
 
@@ -121,25 +102,25 @@ open(args.vector, 'w').close()
 
 construct_graph(session)
 
-# manager = Manager()
-# G = read_graph()
-# num_node, nodes = read_nodes()
-# ratings = manager.list()
+manager = Manager()
+G = read_graph()
+num_node, nodes = read_nodes()
+ratings = manager.list()
 
-# start_time = time.time()
+start_time = time.time()
 
-# processes = []
-# for j in range(num_process):
-# 	p = Process(target = full_ratings, args = (j, G, num_node, nodes, ratings, ))
-# 	processes.append(p)
-# 	p.start()
+processes = []
+for j in range(num_process):
+	p = Process(target = full_ratings, args = (j, G, num_node, nodes, ratings, ))
+	processes.append(p)
+	p.start()
 
-# for p in processes:
-# 	p.join()
+for p in processes:
+	p.join()
 
-# print("--- %d seconds ---" % (time.time() - start_time))
+print("--- %d seconds ---" % (time.time() - start_time))
 
-# np.savetxt(args.rating, ratings, fmt='%d', delimiter = ',')
+np.savetxt(args.rating, ratings, fmt='%d', delimiter = ',')
 
 session.close()
 
