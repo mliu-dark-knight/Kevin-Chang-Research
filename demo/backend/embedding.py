@@ -9,8 +9,6 @@ class Recommender(object):
 	def __init__(self, session):
 		self.startID = -1
 		self.startVec = None
-		self.candidatesInfo = {}
-		self.candidatesVec = {}
 		self.session = session
 		self.func = {"Manhattan Distance": cityblock, "Euclidean Distance": euclidean, "Cosine Distance": cosine, "Inner Product": np.dot}
 
@@ -117,9 +115,9 @@ class node2vecRecommender(Recommender):
 	def getCandidateVec(self):
 		return "node2vec"		
 
-class ppvRecommender(Recommender):
+class fastppvRecommender(Recommender):
 	def getCandidateVec(self):
-		return "ppv"
+		return "fastppv"
 
 
 
@@ -135,16 +133,16 @@ class node2vecResearcherToResearcher(ResearcherToResearcher, node2vecRecommender
 class node2vecPaperToPaper(PaperToPaper, node2vecRecommender):
 	pass
 
-class ppvPaperToResearcher(PaperToResearcher, ppvRecommender):
+class fastppvPaperToResearcher(PaperToResearcher, fastppvRecommender):
 	pass
 
-class ppvResearcherToPaper(ResearcherToPaper, ppvRecommender):
+class fastppvResearcherToPaper(ResearcherToPaper, fastppvRecommender):
 	pass
 
-class ppvResearcherToResearcher(ResearcherToResearcher, ppvRecommender):
+class fastppvResearcherToResearcher(ResearcherToResearcher, fastppvRecommender):
 	pass
 
-class ppvPaperToPaper(PaperToPaper, ppvRecommender):
+class fastppvPaperToPaper(PaperToPaper, fastppvRecommender):
 	pass
 
 

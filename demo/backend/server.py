@@ -1,13 +1,14 @@
 import json
 import numpy as np
+import networkx as nx
 from flask import Flask, request
 from flask_restful import reqparse, abort, Api, Resource
 from neo4j.v1 import GraphDatabase, basic_auth
 from scipy.spatial.distance import cityblock, euclidean, cosine
 from abc import ABCMeta, abstractmethod
-from personalized_pagerank import pprPaperToResearcher, pprResearcherToResearcher, pprResearcherToPaper, pprPaperToPaper
+from personalized_pagerank import fullpprPaperToResearcher, fullpprResearcherToResearcher, fullpprResearcherToPaper, fullpprPaperToPaper
 from embedding import node2vecPaperToResearcher, node2vecResearcherToResearcher, node2vecResearcherToPaper, node2vecPaperToPaper, \
-					  ppvPaperToResearcher, ppvResearcherToResearcher, ppvResearcherToPaper, ppvPaperToPaper
+					  fastppvPaperToResearcher, fastppvResearcherToResearcher, fastppvResearcherToPaper, fastppvPaperToPaper
 
 
 app = Flask(__name__)
@@ -75,7 +76,7 @@ class CompareNode2vec(CompareEmbedding):
 
 class CompareCollaborativeFiltering(CompareEmbedding):
 	def getVector(self, node, nodeType, nodeKey):
-		return list(session.run("match (n:%s) where n.%s = '%s' return n.ppv as ppv" % (node, nodeType, nodeKey)))
+		return list(session.run("match (n:%s) where n.%s = '%s' return n.fastppv as fastppv" % (node, nodeType, nodeKey)))
 
 
 
@@ -103,17 +104,17 @@ class RecommendPtoR(Recommender):
 	def getKey(self, args):
 		return args['name']
 
-class pprRecommendPtoR(RecommendPtoR):
+class fullpprRecommendPtoR(RecommendPtoR):
 	def getRecommender(self, session):
-		return pprPaperToResearcher(session)
+		return fullpprPaperToResearcher(session, G)
 
 class node2vecRecommendPtoR(RecommendPtoR):
 	def getRecommender(self, session):
 		return node2vecPaperToResearcher(session)
 
-class ppvRecommendPtoR(RecommendPtoR):
+class fastppvRecommendPtoR(RecommendPtoR):
 	def getRecommender(self, session):
-		return ppvPaperToResearcher
+		return fastppvPaperToResearcher
 
 
 
@@ -121,17 +122,17 @@ class RecommendRtoR(Recommender):
 	def getKey(self, args):
 		return args['name']
 
-class pprRecommendRtoR(RecommendRtoR):
+class fullpprRecommendRtoR(RecommendRtoR):
 	def getRecommender(self, session):
-		return pprResearcherToResearcher(session)
+		return fullpprResearcherToResearcher(session, G)
 
 class node2vecRecommendRtoR(RecommendRtoR):
 	def getRecommender(self, session):
 		return node2vecResearcherToResearcher(session)
 
-class ppvRecommendRtoR(RecommendRtoR):
+class fastppvRecommendRtoR(RecommendRtoR):
 	def getRecommender(self, session):
-		return ppvResearcherToResearcher
+		return fastppvResearcherToResearcher
 
 
 
@@ -139,17 +140,17 @@ class RecommendRtoP(Recommender):
 	def getKey(self, args):
 		return args['title']
 
-class pprRecommendRtoP(RecommendRtoP):
+class fullpprRecommendRtoP(RecommendRtoP):
 	def getRecommender(self, session):
-		return pprResearcherToPaper(session)
+		return fullpprResearcherToPaper(session, G)
 
 class node2vecRecommendRtoP(RecommendRtoP):
 	def getRecommender(self, session):
 		return node2vecResearcherToPaper(session)
 
-class ppvRecommendRtoP(RecommendRtoP):
+class fastppvRecommendRtoP(RecommendRtoP):
 	def getRecommender(self, session):
-		return ppvResearcherToPaper
+		return fastppvResearcherToPaper
 
 
 
@@ -157,39 +158,40 @@ class RecommendPtoP(Recommender):
 	def getKey(self, args):
 		return args['title']
 
-class pprRecommendPtoP(RecommendPtoP):
+class fullpprRecommendPtoP(RecommendPtoP):
 	def getRecommender(self, session):
-		return pprPaperToPaper(session)
+		return fullpprPaperToPaper(session, G)
 
 class node2vecRecommendPtoP(RecommendPtoP):
 	def getRecommender(self, session):
 		return node2vecPaperToPaper(session)
 
-class ppvRecommendPtoP(RecommendPtoP):
+class fastppvRecommendPtoP(RecommendPtoP):
 	def getRecommender(self, session):
-		return ppvPaperToPaper(session)
+		return fastppvPaperToPaper(session)
 
 
 
 # Actually setup the Api resource routing here
 driver = GraphDatabase.driver("bolt://localhost", auth = basic_auth("neo4j", "mliu60"))
 session = driver.session()
+G = nx.read_edgelist("karate.edgelist", nodetype = int)
 
 allApi = {'/BasicInfo': BasicInfo, 
 		  '/CompareEmbedding/node2vec': CompareNode2vec,
-		  '/CompareEmbedding/ppv': CompareCollaborativeFiltering,
-		  '/pprRecommend/PtoR': pprRecommendPtoR,
-		  '/pprRecommend/RtoR': pprRecommendRtoR,
-		  '/pprRecommend/RtoP': pprRecommendRtoP,
-		  '/pprRecommend/PtoP': pprRecommendPtoP,
+		  '/CompareEmbedding/fastppv': CompareCollaborativeFiltering,
+		  '/fullpprRecommend/PtoR': fullpprRecommendPtoR,
+		  '/fullpprRecommend/RtoR': fullpprRecommendRtoR,
+		  '/fullpprRecommend/RtoP': fullpprRecommendRtoP,
+		  '/fullpprRecommend/PtoP': fullpprRecommendPtoP,
 		  '/node2vecRecommend/PtoR': node2vecRecommendPtoR,
 		  '/node2vecRecommend/RtoR': node2vecRecommendRtoR,
 		  '/node2vecRecommend/RtoP': node2vecRecommendRtoP,
 		  '/node2vecRecommend/PtoP': node2vecRecommendPtoP,
-		  '/ppvRecommend/PtoP': ppvRecommendPtoP,
-		  '/ppvRecommend/RtoR': ppvRecommendRtoR,
-		  '/ppvRecommend/RtoP': ppvRecommendRtoP,
-		  '/ppvRecommend/PtoP': ppvRecommendPtoP
+		  '/fastppvRecommend/PtoP': fastppvRecommendPtoP,
+		  '/fastppvRecommend/RtoR': fastppvRecommendRtoR,
+		  '/fastppvRecommend/RtoP': fastppvRecommendRtoP,
+		  '/fastppvRecommend/PtoP': fastppvRecommendPtoP
 		 }
 for k, v in allApi.iteritems():
 	api.add_resource(v, k)
