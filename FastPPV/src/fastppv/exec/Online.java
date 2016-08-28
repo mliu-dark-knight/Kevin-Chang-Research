@@ -26,6 +26,7 @@ public class Online {
 
         System.out.println("Loading queries...");
         List<Node> qNodes = new ArrayList<Node>();
+        // TextReader in = new TextReader(Config.queryFile);
         TextReader in = new TextReader(Config.nodeFile);
         String line;
         in.readln();
@@ -34,6 +35,7 @@ public class Online {
             if (!split[1].equals("R"))
                 continue;
         	int id = Integer.parseInt(split[0]);
+            // int id = Integer.parseInt(line);
         	qNodes.add(graph.getNode(id));
         }
         in.close();

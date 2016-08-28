@@ -21,13 +21,13 @@ public final class Config {
 
     public static String prefix                     = "/Users/mengxiongliu/Desktop/ECE_CS/Kevin_Chang/FastPPV/dblp/";
     public static String inputprefix                 = "/Users/mengxiongliu/Desktop/ECE_CS/Kevin_Chang/";
-    public static String nodeFile					= inputprefix + "dblp-nodes";
-    public static String edgeFile					= inputprefix + "dblp-edges";
+    public static String nodeFile					= inputprefix + "karate.node";
+    public static String edgeFile					= inputprefix + "karate.edgelist";
     public static String indexDir				    = prefix;
     public static String clusterDir				    = "";
     public static String communityFile				= "";
     public static String outputDir		            = prefix + "vectors";
-    public static String queryFile      		    = prefix + "queries";
+    public static String queryFile      		    = inputprefix + "dblp-queries";
     public static String hubType                    = "";    
     
     public static int resultTop						= 1000;
