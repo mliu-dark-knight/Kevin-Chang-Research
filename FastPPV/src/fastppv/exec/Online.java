@@ -62,7 +62,7 @@ public class Online {
 
             for (KeyValuePair e : rankedResult) {
                 if (nodetype[e.key] == 'P')
-                    outbuffer += (q.id + " " + e.key + " " + e.value * Math.pow(10, 6) + "\n");
+                    outbuffer += (q.id + " " + e.key + " " + (int) e.value * Math.pow(10, 6) + "\n");
             }
             if (count % 10 == 0) {
                 out.write(outbuffer);
