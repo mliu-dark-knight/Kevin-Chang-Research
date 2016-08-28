@@ -50,7 +50,6 @@ public class Online {
         		"fastppv-" + Config.hubType + "_" + Config.numHubs + "_" + Config.eta);
        
         int count = 0;
-        String outbuffer = "";
         for (Node q : qNodes) {
             if (nodetype[q.id] != 'R')
                 continue;
@@ -60,15 +59,14 @@ public class Online {
             rankedResult = qp.query(q).getTopResult(Config.resultTop);
             long elapsed = (System.currentTimeMillis() - start);
 
+            String buffer = "";
             for (KeyValuePair e : rankedResult) {
                 if (nodetype[e.key] == 'P')
-                    outbuffer += (q.id + " " + e.key + " " + (int) e.value * Math.pow(10, 6) + "\n");
+                    buffer += (q.id + " " + e.key + " " + (int) (e.value * Math.pow(10, 6)) + "\n");
             }
-            if (count % 10 == 0) {
-                out.write(outbuffer);
-                outbuffer = "";
+            out.write(buffer);
+            if (count % 50000 == 0)
                 System.out.println(elapsed + "ms ");
-            }
         }
         out.close();
 
