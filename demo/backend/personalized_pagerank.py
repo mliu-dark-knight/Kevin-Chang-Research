@@ -33,9 +33,9 @@ class Recommender(object):
 		rank = self.G.personalized_pagerank(vertices = np.array([candidate["ID"] for candidate in candidates]), directed = False, damping = 0.9, reset_vertices = self.startID)
 		candidateList = []
 		for i in xrange(len(candidates)):
-			candidateList.append(self.getFormat(candidate, rank[i]))
+			candidateList.append(self.getFormat(candidates[i], rank[i]))
 		candidateList.sort(key = lambda c: c["score"], reverse = True)
-		return candidateList[:limit]		
+		return candidateList[:limit]
 
 
 class fullpprPaperToResearcher(Recommender):
