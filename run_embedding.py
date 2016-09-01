@@ -105,7 +105,7 @@ def create_input():
 	print "Creating input from db"
 	with open(args.input, 'w') as f:
 		num_node = session.run("match (n) return count(*) as count").single()['count']
-		for i in range(num_node / epoch + 1):
+		for i in xrange(num_node / epoch + 1):
 			lower = i * epoch
 			upper = (i+1) * epoch
 			for edge in list(session.run("match (src)-->(dest) where ID(src) >= %d and ID(src) < %d "\

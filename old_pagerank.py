@@ -42,7 +42,7 @@ data = np.empty([num_node + num_edge], dtype = float)
 
 
 sparse_idx = 0
-for x in range(num_node):
+for x in xrange(num_node):
 	ys = list(session.run("match (src)--(dest) where ID(src) = %d return ID(dest) as ID" % x))
 
 	if len(ys) != 0:
@@ -79,7 +79,7 @@ print "Finish setting up page rank matrix"
 
 
 
-for i in range(num_iter):
+for i in xrange(num_iter):
 	rank = matrix.dot(rank)
 	print rank
 print "Finish iteration"
@@ -87,7 +87,7 @@ print "Finish iteration"
 del matrix
 gc.collect()
 
-for i in range(num_node):
+for i in xrange(num_node):
 	session.run("match (n) where ID(n) = %d set n.pagerank = %f" %(i, rank[i] * 100.0))
 	if i % epoch == 0:
 		print "Insert epoch %d" % (i / epoch)

@@ -2,7 +2,7 @@ import argparse
 import gc
 import time
 import numpy as np
-import networkx as nx
+from igraph import Graph
 from multiprocessing import Process, Manager
 from neo4j.v1 import GraphDatabase, basic_auth
 
@@ -16,11 +16,11 @@ num_rating = 10000
 def parse_args():
 	parser = argparse.ArgumentParser()
 
-	parser.add_argument('--graph', nargs='?', default='karate.edgelist')
+	parser.add_argument('--graph', nargs='?', default='karate2010.edgelist')
 
-	parser.add_argument('--node', nargs='?', default='karate.node')
+	parser.add_argument('--node', nargs='?', default='karate2010.node')
 
-	parser.add_argument('--vector', nargs='?', default='karate.ppv')
+	parser.add_argument('--vector', nargs='?', default='karate2010.ppv')
 
 	return parser.parse_args()
 
@@ -32,29 +32,29 @@ def construct_graph(session):
 	with open(args.graph, 'w') as fg:
 		with open(args.node, 'w') as fn:
 			fn.write(str(num_node) + '\n')
-			for i in range(num_node / epoch + 1):
+			for i in xrange(num_node / epoch + 1):
 				lower = i * epoch
 				upper = (i+1) * epoch
-				for edge in list(session.run("match (src)-->(dest) where ID(src) >= %d and ID(src) < %d "\
-											 "return ID(src) as srcID, ID(dest) as destID, labels(src) as srcType, labels(dest) as destType" % (lower, upper))):
-					srcID, destID = edge['srcID'], edge['destID']
-					srcType, destType = edge['srcType'][0], edge['destType'][0]
-					fg.write(str(srcID) + ' ' + str(destID) + '\n')
-					if srcID not in IDs:
-						IDs.add(srcID)
-						fn.write(str(srcID) + ' ' + srcType[0] + '\n')
-					if destID not in IDs:
-						IDs.add(destID)
-						fn.write(str(destID) + ' ' + destType[0] + '\n')
+				for query in ["match (r:Researcher)-->(p:Paper) where p.year >= 2010 and ID(r) >= %d and ID(r) < %d "\
+							  "return ID(r) as srcID, ID(p) as destID, labels(r) as srcType, labels(p) as destType" % (lower, upper), 
+							  "match (p:Paper)-->(c:Conference) where p.year >= 2010 and ID(p) >= %d and ID(p) < %d "\
+							  "return ID(p) as srcID, ID(c) as destID, labels(p) as srcType, labels(c) as destType" % (lower, upper), 
+							  "match (p1:Paper)-->(p2:Paper) where p1.year >= 2010 and p2.year >= 2010 and ID(p1) >= %d and ID(p1) < %d "\
+							  "return ID(p1) as srcID, ID(p2) as destID, labels(p1) as srcType, labels(p2) as destType" % (lower, upper)]:
+					for edge in list(session.run(query)):
+						srcID, destID = edge['srcID'], edge['destID']
+						srcType, destType = edge['srcType'][0], edge['destType'][0]
+						fg.write(str(srcID) + ' ' + str(destID) + '\n')
+						if srcID not in IDs:
+							IDs.add(srcID)
+							fn.write(str(srcID) + ' ' + srcType[0] + '\n')
+						if destID not in IDs:
+							IDs.add(destID)
+							fn.write(str(destID) + ' ' + destType[0] + '\n')
 
 		fn.close()
 	fg.close()
 
-
-
-def read_graph():
-	print "Reading graph"
-	return nx.read_edgelist(args.graph, nodetype = int)
 
 
 def read_nodes():
@@ -73,18 +73,12 @@ def read_nodes():
 
 def full_ratings(processID, G, num_node, nodes, ratings):
 	print "Creating ratings"
-	for r in range(processID, num_node, num_process):
+	for r in xrange(processID, num_node, num_process):
 		if r % random_walk_epoch == 0:
 			print "Random walk epoch: %d" % (r / random_walk_epoch)
 		if nodes[r] != 'R':
 			continue
-		ego_G = nx.ego_graph(G, r, radius = 3, center = True, undirected = True)
-		personalization = {n: 0.0 for n in ego_G.nodes()}
-		personalization[r] = 1.0
-		ranks = nx.pagerank_scipy(ego_G, alpha = 0.9, personalization = personalization, tol = 1e-02,  max_iter = 64)
-		del ego_G
-		del personalization
-		gc.collect()
+		ranks = self.G.personalized_pagerank(vertices = np.array([candidate["ID"] for candidate in candidates]), directed = False, damping = 0.9, reset_vertices = self.startID)
 		ranks = np.array(ranks.items())
 		ranks[:,1] *= 1e6
 		ranks = ranks.astype(int)
@@ -100,17 +94,17 @@ session = driver.session()
 args = parse_args()
 open(args.vector, 'w').close()
 
-construct_graph(session)
+# construct_graph(session)
 
 manager = Manager()
-G = read_graph()
+G = Graph.Read_Ncol('../../karate2010.edgelist', directed = False)
 num_node, nodes = read_nodes()
 ratings = manager.list()
 
 start_time = time.time()
 
 processes = []
-for j in range(num_process):
+for j in xrange(num_process):
 	p = Process(target = full_ratings, args = (j, G, num_node, nodes, ratings, ))
 	processes.append(p)
 	p.start()

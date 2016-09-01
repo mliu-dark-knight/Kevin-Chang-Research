@@ -124,7 +124,7 @@ Format required by neo4j
 Do not change orders, node should be inserted before inserting edges
 '''
 def to_csv():
-	df = pd.DataFrame(papers, columns = ["paperID:ID", "title", "year", ":LABEL"])
+	df = pd.DataFrame(papers, columns = ["paperID:ID", "title", "year:INT", ":LABEL"])
 	df.to_csv("data/Paper.csv", index = False, encoding = 'utf-8')
 
 	df = pd.DataFrame(researchers, columns = ["name:ID", ":LABEL"])
