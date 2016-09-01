@@ -8,8 +8,8 @@ from neo4j.v1 import GraphDatabase, basic_auth
 
 
 epoch = 50000
-random_walk_epoch = 10
-num_process = 2
+random_walk_epoch = 50000
+num_process = 4
 num_rating = 10000
 
 
@@ -54,8 +54,6 @@ def construct_graph(session):
 							IDs.add(destID)
 							fn.write(str(destID) + ' ' + destType[0] + '\n')
 
-			for node in session.run("match (n) where not (n)--() return ID(n) ad ID, labels(n) as Type"):
-				fn.write(str(node['ID']) + ' ' + node['Type'][0] + '\n')
 		fn.close()
 	fg.close()
 
@@ -98,7 +96,7 @@ session = driver.session()
 args = parse_args()
 open(args.vector, 'w').close()
 
-# construct_graph(session)
+construct_graph(session)
 
 manager = Manager()
 G = Graph.Read_Ncol(args.edge, directed = False)
