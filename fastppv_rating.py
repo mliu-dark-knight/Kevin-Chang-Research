@@ -8,17 +8,19 @@ from neo4j.v1 import GraphDatabase, basic_auth
 
 
 epoch = 50000
-random_walk_epoch = 10000
-num_process = 4
+random_walk_epoch = 10
+num_process = 2
 num_rating = 10000
 
 
 def parse_args():
 	parser = argparse.ArgumentParser()
 
-	parser.add_argument('--graph', nargs='?', default='karate2010.edgelist')
+	parser.add_argument('--edge', nargs='?', default='karate2010.edgelist')
 
 	parser.add_argument('--node', nargs='?', default='karate2010.node')
+
+	parser.add_argument('--rating', nargs='?', default='karate2010.rating')
 
 	parser.add_argument('--vector', nargs='?', default='karate2010.ppv')
 
@@ -29,7 +31,7 @@ def construct_graph(session):
 	print "Constructing graph from db"
 	num_node = session.run("match (n) return count(*) as count").single()['count']
 	IDs = set()
-	with open(args.graph, 'w') as fg:
+	with open(args.edge, 'w') as fg:
 		with open(args.node, 'w') as fn:
 			fn.write(str(num_node) + '\n')
 			for i in xrange(num_node / epoch + 1):
@@ -52,6 +54,8 @@ def construct_graph(session):
 							IDs.add(destID)
 							fn.write(str(destID) + ' ' + destType[0] + '\n')
 
+			for node in session.run("match (n) where not (n)--() return ID(n) ad ID, labels(n) as Type"):
+				fn.write(str(node['ID']) + ' ' + node['Type'][0] + '\n')
 		fn.close()
 	fg.close()
 
@@ -78,11 +82,11 @@ def full_ratings(processID, G, num_node, nodes, ratings):
 			print "Random walk epoch: %d" % (r / random_walk_epoch)
 		if nodes[r] != 'R':
 			continue
-		ranks = self.G.personalized_pagerank(vertices = np.array([candidate["ID"] for candidate in candidates]), directed = False, damping = 0.9, reset_vertices = self.startID)
-		ranks = np.array(ranks.items())
-		ranks[:,1] *= 1e6
+		ranks = G.personalized_pagerank(directed = False, damping = 0.9, weights = None, reset_vertices = r)
+		ranks = np.array(ranks)
+		ranks *= 1e6
 		ranks = ranks.astype(int)
-		ranks = np.array(filter(lambda row: nodes[row[0]] == 'P' and row[1] > 0, ranks))
+		ranks = np.array(filter(lambda row: nodes[row[0]] == 'P' and row[1] > 0, np.column_stack((np.arange(len(ranks)), ranks))))
 		for rank in ranks:
 			ratings.append((r, rank[0], rank[1]))
 
@@ -97,7 +101,7 @@ open(args.vector, 'w').close()
 # construct_graph(session)
 
 manager = Manager()
-G = Graph.Read_Ncol('../../karate2010.edgelist', directed = False)
+G = Graph.Read_Ncol(args.edge, directed = False)
 num_node, nodes = read_nodes()
 ratings = manager.list()
 
