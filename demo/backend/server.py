@@ -232,7 +232,7 @@ for k, v in allApi.iteritems():
 
 
 if __name__ == '__main__':
-	app.run(debug = False)
+	app.run(debug = False, processes = 4)
 
 session.close()
 
