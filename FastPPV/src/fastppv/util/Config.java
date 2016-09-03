@@ -20,14 +20,14 @@ public final class Config {
     public static int	 numRepetitions				= 5;
 
     public static String prefix                     = "/Users/mengxiongliu/Desktop/ECE_CS/Kevin_Chang/FastPPV/dblp/";
-    public static String inputprefix                 = "/Users/mengxiongliu/Desktop/ECE_CS/Kevin_Chang/";
-    public static String nodeFile					= inputprefix + "karate.node";
-    public static String edgeFile					= inputprefix + "karate.edgelist";
+    public static String inputprefix                = "/Users/mengxiongliu/Desktop/ECE_CS/Kevin_Chang/";
+    public static String nodeFile					= inputprefix + "karate2010.node";
+    public static String edgeFile					= inputprefix + "karate2010.edgelist";
     public static String indexDir				    = prefix;
     public static String clusterDir				    = "";
     public static String communityFile				= "";
     public static String outputDir		            = prefix + "vectors";
-    public static String queryFile      		    = inputprefix + "dblp-queries";
+    public static String queryFile      		    = inputprefix + "karate2010.node";
     public static String hubType                    = "";    
     
     public static int resultTop						= 1000;
