@@ -41,7 +41,10 @@ class Recommender(object):
 		candidateList = []
 		for candidate in candidates:
 			candidateList.append(self.getFormat(candidate, self.getRank(candidate, rank_policy)))
-		candidateList.sort(key = lambda c: c["score"], reverse = False)
+		if rank_policy == "Inner Product":
+			candidateList.sort(key = lambda c: c["score"], reverse = True)
+		else:
+			candidateList.sort(key = lambda c: c["score"], reverse = False)
 		return candidateList[:limit]
 
 	def getRank(self, candidate, rank_policy):
@@ -56,7 +59,7 @@ class PaperToResearcher(Recommender):
 
 	def generateCandidates(self):
 		vec = self.getCandidateVec()
-		return list(self.session.run("match (r:Researcher)-[*1..3]-(p:Paper) where ID(r) = %d and not (r)-[:AuthorOf]-(p) return distinct(ID(p)) as ID, p.title as title, p.year as year, p.pagerank as pagerank, p.%s as %s" % (self.startID, vec, vec)))
+		return list(self.session.run("match (r:Researcher)-[*1..3]-(p:Paper) where ID(r) = %d and has(p.%s) and not (r)-[:AuthorOf]-(p) return distinct(ID(p)) as ID, p.title as title, p.year as year, p.pagerank as pagerank, p.%s as %s" % (self.startID, vec, vec, vec)))
 
 	def getProperty(self, candidate):
 		return (candidate["title"], candidate["year"], candidate["pagerank"])
@@ -71,7 +74,7 @@ class ResearcherToPaper(Recommender):
 
 	def generateCandidates(self):
 		vec = self.getCandidateVec()
-		return list(self.session.run("match (p:Paper)-[*1..3]-(r:Researcher) where ID(p) = %d and not (r)-[:AuthorOf]-(p) return distinct(ID(r)) as ID, r.name as name, r.pagerank as pagerank, r.%s as %s" % (self.startID, vec, vec)))
+		return list(self.session.run("match (p:Paper)-[*1..3]-(r:Researcher) where ID(p) = %d and has(r.%s) and not (r)-[:AuthorOf]-(p) return distinct(ID(r)) as ID, r.name as name, r.pagerank as pagerank, r.%s as %s" % (self.startID, vec, vec, vec)))
 
 	def getProperty(self, candidate):
 		return (candidate["name"], candidate["pagerank"])
@@ -86,7 +89,7 @@ class ResearcherToResearcher(Recommender):
 
 	def generateCandidates(self):
 		vec = self.getCandidateVec()
-		return list(self.session.run("match (p:Paper)-[*1..4]-(r:Researcher) where ID(p) = %d and not (r)-[:AuthorOf]-(p) return distinct(ID(r)) as ID, r.name as name, r.pagerank as pagerank, r.%s as %s" % (self.startID, vec, vec)))
+		return list(self.session.run("match (p:Paper)-[*1..4]-(r:Researcher) where ID(p) = %d and has(r.%s) and not (r)-[:AuthorOf]-(p) return distinct(ID(r)) as ID, r.name as name, r.pagerank as pagerank, r.%s as %s" % (self.startID, vec, vec, vec)))
 
 	def getProperty(self, candidate):
 		return (candidate["name"], candidate["pagerank"])
@@ -101,7 +104,7 @@ class PaperToPaper(Recommender):
 
 	def generateCandidates(self):
 		vec = self.getCandidateVec()
-		return list(self.session.run("match (r:Researcher)-[*1..2]-(p:Paper) where ID(r) = %d and not (r)-[:AuthorOf]-(p) return distinct(ID(p)) as ID, p.title as title, p.year as year, p.pagerank as pagerank, p.%s as %s" % (self.startID, vec,vec)))
+		return list(self.session.run("match (r:Researcher)-[*1..2]-(p:Paper) where ID(r) = %d and has(p.%s) not (r)-[:AuthorOf]-(p) return distinct(ID(p)) as ID, p.title as title, p.year as year, p.pagerank as pagerank, p.%s as %s" % (self.startID, vec, vec, vec)))
 
 	def getProperty(self, candidate):
 		return (candidate["title"], candidate["year"], candidate["pagerank"])
