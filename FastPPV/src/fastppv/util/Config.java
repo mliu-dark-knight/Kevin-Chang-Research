@@ -32,6 +32,7 @@ public final class Config {
     
     public static int resultTop						= 1000;
     public static int hubTop						= 100000;
+    public static int resultCoefficient             = 10;
     public static int iterations                    = 10;
     public static int progressiveTopK				= 100;
     

@@ -89,6 +89,22 @@ def full_ratings(processID, G, num_node, nodes, ratings):
 			ratings.append((r, rank[0], rank[1]))
 
 
+def save_vectors():
+	print "Saving vectors to db"
+	with open(args.vector, 'r') as f:
+		i = 0
+		for line in f:
+			line = line[:-1].split(' ', 1)
+			nodeID = int(line[0])
+			vec = line[1]
+			session.run("match (n) where ID(n) = %d set n.node2vec = '%s'" % (nodeID, vec))
+			if i % epoch == 0:
+				print "Insert epoch %d" % (i / epoch)
+			i += 1
+
+	f.close()
+
+
 
 driver = GraphDatabase.driver("bolt://localhost", auth = basic_auth("neo4j", "mliu60"))
 session = driver.session()
@@ -117,6 +133,8 @@ for p in processes:
 print("--- %d seconds ---" % (time.time() - start_time))
 
 np.savetxt(args.rating, ratings, fmt='%d', delimiter = ',')
+
+save_vectors()
 
 session.close()
 

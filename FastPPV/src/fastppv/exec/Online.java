@@ -54,9 +54,10 @@ public class Online {
             if (nodetype[q.id] != 'R')
                 continue;
             count++;
+            int num_rating = Math.min(q.out.size() * Config.resultCoefficient, Config.resultTop);
             List<KeyValuePair> rankedResult = null;
             long start = System.currentTimeMillis();
-            rankedResult = qp.query(q).getTopResult(Config.resultTop);
+            rankedResult = qp.query(q).getTopResult(num_rating);
             long elapsed = (System.currentTimeMillis() - start);
 
             String buffer = "";
@@ -65,7 +66,7 @@ public class Online {
                     buffer += (q.id + " " + e.key + " " + (int) (e.value * Math.pow(10, 6)) + "\n");
             }
             out.write(buffer);
-            if (count % 50000 == 0)
+            if (count % 10000 == 0)
                 System.out.println(elapsed + "ms ");
         }
         out.close();
