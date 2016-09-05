@@ -32,6 +32,16 @@ class Recommender(object):
 	def getFormat(self, candidate, score):
 		pass
 
+	def getResearcherByName(self, name):
+		vec = self.getCandidateVec()
+		pair = self.session.run("match (r:Researcher {name:'%s'}) return ID(r) as ID, r.%s as %s" % (name, vec, vec)).single()
+		return pair["ID"], pair[vec]
+
+	def getPaperByTitle(self, title):
+		vec = self.getCandidateVec()
+		pair = self.session.run("match (p:Paper {title: '%s'}) return ID(p) as ID, p.%s as %s" % (title, vec, vec)).single()
+		return pair["ID"], pair[vec]
+
 	def recommend(self, input, limit, rank_policy):
 		if rank_policy not in self.func:
 			raise ValueError("Ranking policy does not exist.")
@@ -55,7 +65,7 @@ class Recommender(object):
 
 class PaperToResearcher(Recommender):
 	def getStart(self, input):
-		return getResearcherByName(input, self.session)
+		return self.getResearcherByName(input)
 
 	def generateCandidates(self):
 		vec = self.getCandidateVec()
@@ -70,7 +80,7 @@ class PaperToResearcher(Recommender):
 
 class ResearcherToPaper(Recommender):
 	def getStart(self, input):
-		return getPaperByTitle(input, self.session)
+		return self.getPaperByTitle(input)
 
 	def generateCandidates(self):
 		vec = self.getCandidateVec()
@@ -85,11 +95,11 @@ class ResearcherToPaper(Recommender):
 
 class ResearcherToResearcher(Recommender):
 	def getStart(self, input):
-		return getResearcherByName(input, self.session)
+		return self.getResearcherByName(input)
 
 	def generateCandidates(self):
 		vec = self.getCandidateVec()
-		return list(self.session.run("match (p:Paper)-[*1..4]-(r:Researcher) where ID(p) = %d and exists(r.%s) and not (r)-[:AuthorOf]-(p) return distinct(ID(r)) as ID, r.name as name, r.pagerank as pagerank, r.%s as %s" % (self.startID, vec, vec, vec)))
+		return list(self.session.run("match (r1:Researcher)-[*1..4]-(r2:Researcher) where ID(r1) = %d and exists(r2.%s) and not ID(r1) = ID(r2) return distinct(ID(r2)) as ID, r2.name as name, r2.pagerank as pagerank, r2.%s as %s" % (self.startID, vec, vec, vec)))
 
 	def getProperty(self, candidate):
 		return (candidate["name"], candidate["pagerank"])
@@ -100,11 +110,11 @@ class ResearcherToResearcher(Recommender):
 
 class PaperToPaper(Recommender):
 	def getStart(self, input):
-		return getPaperByTitle(input, self.session)
+		return self.getPaperByTitle(input)
 
 	def generateCandidates(self):
 		vec = self.getCandidateVec()
-		return list(self.session.run("match (r:Researcher)-[*1..2]-(p:Paper) where ID(r) = %d and exists(p.%s) not (r)-[:AuthorOf]-(p) return distinct(ID(p)) as ID, p.title as title, p.year as year, p.pagerank as pagerank, p.%s as %s" % (self.startID, vec, vec, vec)))
+		return list(self.session.run("match (p1:Paper)-[*1..2]-(p2:Paper) where ID(p1) = %d and exists(p2.%s) and not ID(p1) = ID(p2) return distinct(ID(p2)) as ID, p2.title as title, p2.year as year, p2.pagerank as pagerank, p2.%s as %s" % (self.startID, vec, vec, vec)))
 
 	def getProperty(self, candidate):
 		return (candidate["title"], candidate["year"], candidate["pagerank"])
@@ -149,15 +159,6 @@ class fastppvPaperToPaper(PaperToPaper, fastppvRecommender):
 	pass
 
 
-
-def getResearcherByName(name, session):
-	pair = session.run("match (r:Researcher {name:'%s'}) return ID(r) as ID, r.node2vec as vec" % name).single()
-	return pair["ID"], pair["vec"]
-
-
-def getPaperByTitle(title, session):
-	pair = session.run("match (p:Paper {title: '%s'}) return ID(p) as ID, p.node2vec as vec" % title).single()
-	return pair["ID"], pair["vec"]
 
 
 def researcherFormat(result):
