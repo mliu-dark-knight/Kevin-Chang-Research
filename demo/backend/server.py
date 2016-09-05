@@ -144,7 +144,7 @@ class node2vecRecommendPtoR(RecommendPtoR, embeddingBasedRecommender):
 
 class fastppvRecommendPtoR(RecommendPtoR, embeddingBasedRecommender):
 	def getRecommender(self):
-		return fastppvPaperToResearcher
+		return fastppvPaperToResearcher(session)
 
 
 
@@ -162,7 +162,7 @@ class node2vecRecommendRtoR(RecommendRtoR, embeddingBasedRecommender):
 
 class fastppvRecommendRtoR(RecommendRtoR, embeddingBasedRecommender):
 	def getRecommender(self):
-		return fastppvResearcherToResearcher
+		return fastppvResearcherToResearcher(session)
 
 
 
@@ -180,7 +180,7 @@ class node2vecRecommendRtoP(RecommendRtoP, embeddingBasedRecommender):
 
 class fastppvRecommendRtoP(RecommendRtoP, embeddingBasedRecommender):
 	def getRecommender(self):
-		return fastppvResearcherToPaper
+		return fastppvResearcherToPaper(session)
 
 
 
@@ -208,7 +208,7 @@ driver = GraphDatabase.driver("bolt://localhost", auth = basic_auth("neo4j", "ml
 session = driver.session()
 
 # load graph and initialized personalization
-G = Graph.Read_Ncol('../../karate.edgelist', directed = False)
+# G = Graph.Read_Ncol('../../karate.edgelist', directed = False)
 
 allApi = {'/BasicInfo': BasicInfo, 
 		  '/CompareEmbedding/node2vec': CompareNode2vec,
@@ -221,7 +221,7 @@ allApi = {'/BasicInfo': BasicInfo,
 		  '/node2vecRecommend/RtoR': node2vecRecommendRtoR,
 		  '/node2vecRecommend/RtoP': node2vecRecommendRtoP,
 		  '/node2vecRecommend/PtoP': node2vecRecommendPtoP,
-		  '/fastppvRecommend/PtoP': fastppvRecommendPtoP,
+		  '/fastppvRecommend/PtoR': fastppvRecommendPtoR,
 		  '/fastppvRecommend/RtoR': fastppvRecommendRtoR,
 		  '/fastppvRecommend/RtoP': fastppvRecommendRtoP,
 		  '/fastppvRecommend/PtoP': fastppvRecommendPtoP

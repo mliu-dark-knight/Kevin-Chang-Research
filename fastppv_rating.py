@@ -97,7 +97,7 @@ def save_vectors():
 			line = line[:-1].split(' ', 1)
 			nodeID = int(line[0])
 			vec = line[1]
-			session.run("match (n) where ID(n) = %d set n.node2vec = '%s'" % (nodeID, vec))
+			session.run("match (n) where ID(n) = %d set n.fastppv = '%s'" % (nodeID, vec))
 			if i % epoch == 0:
 				print "Insert epoch %d" % (i / epoch)
 			i += 1
@@ -110,6 +110,7 @@ driver = GraphDatabase.driver("bolt://localhost", auth = basic_auth("neo4j", "ml
 session = driver.session()
 
 args = parse_args()
+
 open(args.vector, 'w').close()
 
 construct_graph(session)
