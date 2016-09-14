@@ -7,9 +7,7 @@ from neo4j.v1 import GraphDatabase, basic_auth
 from scipy.spatial.distance import cityblock, euclidean, cosine
 from abc import ABCMeta, abstractmethod
 from personalized_pagerank import fullpprPaperToResearcher, fullpprResearcherToResearcher, fullpprResearcherToPaper, fullpprPaperToPaper
-from embedding import node2vecPaperToResearcher, node2vecResearcherToResearcher, node2vecResearcherToPaper, node2vecPaperToPaper, \
-					  fastppvPaperToResearcher, fastppvResearcherToResearcher, fastppvResearcherToPaper, fastppvPaperToPaper
-
+from embedding import *
 
 app = Flask(__name__)
 api = Api(app)
@@ -142,6 +140,10 @@ class node2vecRecommendPtoR(RecommendPtoR, embeddingBasedRecommender):
 	def getRecommender(self):
 		return node2vecPaperToResearcher(session)
 
+class doc2vecRecommendPtoR(RecommendPtoR, embeddingBasedRecommender):
+	def getRecommender(self):
+		return doc2vecPaperToResearcher(session)
+
 class fastppvRecommendPtoR(RecommendPtoR, embeddingBasedRecommender):
 	def getRecommender(self):
 		return fastppvPaperToResearcher(session)
@@ -159,6 +161,10 @@ class fullpprRecommendRtoR(RecommendRtoR, rankBasedRecommender):
 class node2vecRecommendRtoR(RecommendRtoR, embeddingBasedRecommender):
 	def getRecommender(self):
 		return node2vecResearcherToResearcher(session)
+
+class doc2vecRecommendRtoR(RecommendRtoR, embeddingBasedRecommender):
+	def getRecommender(self):
+		return doc2vecResearcherToResearcher(session)
 
 class fastppvRecommendRtoR(RecommendRtoR, embeddingBasedRecommender):
 	def getRecommender(self):
@@ -178,6 +184,10 @@ class node2vecRecommendRtoP(RecommendRtoP, embeddingBasedRecommender):
 	def getRecommender(self):
 		return node2vecResearcherToPaper(session)
 
+class doc2vecRecommendRtoP(RecommendRtoP, embeddingBasedRecommender):
+	def getRecommender(self):
+		return doc2vecResearcherToPaper(session)
+
 class fastppvRecommendRtoP(RecommendRtoP, embeddingBasedRecommender):
 	def getRecommender(self):
 		return fastppvResearcherToPaper(session)
@@ -195,6 +205,10 @@ class fullpprRecommendPtoP(RecommendPtoP, rankBasedRecommender):
 class node2vecRecommendPtoP(RecommendPtoP, embeddingBasedRecommender):
 	def getRecommender(self):
 		return node2vecPaperToPaper(session)
+
+class doc2vecRecommendPtoP(RecommendPtoP, embeddingBasedRecommender):
+	def getRecommender(self):
+		return doc2vecPaperToPaper
 
 class fastppvRecommendPtoP(RecommendPtoP, embeddingBasedRecommender):
 	def getRecommender(self):
@@ -221,6 +235,10 @@ allApi = {'/BasicInfo': BasicInfo,
 		  '/node2vecRecommend/RtoR': node2vecRecommendRtoR,
 		  '/node2vecRecommend/RtoP': node2vecRecommendRtoP,
 		  '/node2vecRecommend/PtoP': node2vecRecommendPtoP,
+		  '/doc2vecRecommend/PtoR': doc2vecRecommendPtoR,
+		  '/doc2vecRecommend/RtoR': doc2vecRecommendRtoR,
+		  '/doc2vecRecommend/RtoP': doc2vecRecommendRtoP,
+		  '/doc2vecRecommend/PtoP': doc2vecRecommendPtoP,
 		  '/fastppvRecommend/PtoR': fastppvRecommendPtoR,
 		  '/fastppvRecommend/RtoR': fastppvRecommendRtoR,
 		  '/fastppvRecommend/RtoP': fastppvRecommendRtoP,

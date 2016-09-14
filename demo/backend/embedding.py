@@ -126,7 +126,11 @@ class PaperToPaper(Recommender):
 
 class node2vecRecommender(Recommender):
 	def getCandidateVec(self):
-		return "node2vec"		
+		return "node2vec"
+
+class doc2vecRecommender(Recommender):
+	def getCandidateVec(self):
+		return "doc2vec"
 
 class fastppvRecommender(Recommender):
 	def getCandidateVec(self):
@@ -144,6 +148,18 @@ class node2vecResearcherToResearcher(ResearcherToResearcher, node2vecRecommender
 	pass
 
 class node2vecPaperToPaper(PaperToPaper, node2vecRecommender):
+	pass
+
+class doc2vecPaperToResearcher(PaperToResearcher, node2vecRecommender):
+	pass
+
+class doc2vecResearcherToPaper(ResearcherToPaper, node2vecRecommender):
+	pass
+
+class doc2vecResearcherToResearcher(ResearcherToResearcher, node2vecRecommender):
+	pass
+
+class doc2vecPaperToPaper(PaperToPaper, node2vecRecommender):
 	pass
 
 class fastppvPaperToResearcher(PaperToResearcher, fastppvRecommender):
