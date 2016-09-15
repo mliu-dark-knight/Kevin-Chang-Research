@@ -34,9 +34,16 @@ def query_papers(session):
 	with io.open(args.title, 'w', encoding = 'utf-16') as f:
 		for i in xrange(num_node / epoch + 1):
 			lower = i * epoch
-			upper = (i+1) * epoch
+			upper = (i + 1) * epoch
 			for title in list(session.run("match (p:Paper) where ID(p) >= %d and ID(p) < %d return ID(p) as ID, p.title as title" % (lower, upper))):
 				f.write(str(title['ID']) + ', ' + title['title'] + '\n')
+
+		for i in xrange(num_node):
+			title_buffer = ""
+			for title in list(session.run("match (n)--(p:Paper) where ID(n) = %d and (n:Researcher or n:Conference) return p.title as title" % i)):
+				title_buffer += (title['title'] + ' ')
+			if title_buffer != "":
+				f.write(str(i) + ', ' + title_buffer + '\n')
 	f.close()
 
 def convert_to_phrases():
@@ -60,7 +67,7 @@ def learn_vectors():
 			labels.append(line.split(', ')[0])
 			idx += 1
 	f.close()
-	model = Doc2Vec(document, size=64, window=4, min_count=0, workers=4, iter=16)
+	model = Doc2Vec(document, size=64, window=8, min_count=1, workers=4, iter=20)
 	with open(args.vector, 'w') as f:
 		for i in xrange(len(labels)):
 			f.write(str(labels[i]) + ', ' + ' '.join(map(str, model.docvecs[i])) + '\n')
@@ -71,7 +78,7 @@ def insert_vectors(session):
 	with open(args.vector, 'r') as f:
 		for line in f:
 			pair = line[:-1].split(', ', 1)
-			session.run("match (p:Paper) where ID(p) = %d set p.doc2vec = '%s'" % (int(pair[0]), pair[1]))
+			session.run("match (n) where ID(n) = %d set n.doc2vec = '%s'" % (int(pair[0]), pair[1]))
 	f.close()
 
 def aggregate_vectors(session):
@@ -94,11 +101,10 @@ session = driver.session()
 
 args = parse_args()
 
-# query_papers(session)
-# convert_to_phrases()
+query_papers(session)
+convert_to_phrases()
 # learn_vectors()
 # insert_vectors(session)
-aggregate_vectors(session)
 
 session.close()
 
