@@ -97,8 +97,8 @@ args = parse_args()
 # query_papers(session)
 # convert_to_phrases()
 # learn_vectors()
-insert_vectors(session)
-# aggregate_vectors(session)
+# insert_vectors(session)
+aggregate_vectors(session)
 
 session.close()
 

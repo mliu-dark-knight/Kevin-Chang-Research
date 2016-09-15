@@ -60,14 +60,14 @@ class CompareEmbedding(Resource):
 		nodeKey1, nodeKey2 = args[nodeType1 + '1'], args[nodeType2 + '2']
 		result1 = self.getVector(node1, nodeType1, nodeKey1)
 		try:
-			assert len(result1) == 1
+			assert len(result1) > 0
 		except:
-			raise ValueError("%s does not exist in database" % node)
+			raise ValueError("%s does not exist in database" % node1)
 		result2 = self.getVector(node2, nodeType2, nodeKey2)
 		try:
-			assert len(result2) == 1
+			assert len(result2) > 0
 		except:
-			raise ValueError("%s does not exist in database" % node)
+			raise ValueError("%s does not exist in database" % node2)
 		result1 = np.array(map(float, result1[0][self.getVecName()].split(' ')))
 		result2 = np.array(map(float, result2[0][self.getVecName()].split(' ')))
 		diff = ','.join(map(str, result1 - result2))
@@ -230,7 +230,7 @@ driver = GraphDatabase.driver("bolt://localhost", auth = basic_auth("neo4j", "ml
 session = driver.session()
 
 # load graph and initialized personalization
-# G = Graph.Read_Ncol('../../karate.edgelist', directed = False)
+G = Graph.Read_Ncol('../../karate.edgelist', directed = False)
 
 allApi = {'/BasicInfo': BasicInfo, 
 		  '/CompareEmbedding/node2vec': CompareNode2vec,
@@ -259,7 +259,7 @@ for k, v in allApi.iteritems():
 
 
 if __name__ == '__main__':
-	app.run(debug = False, processes = 4)
+	app.run(debug = False)
 
 session.close()
 

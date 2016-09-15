@@ -150,16 +150,16 @@ class node2vecResearcherToResearcher(ResearcherToResearcher, node2vecRecommender
 class node2vecPaperToPaper(PaperToPaper, node2vecRecommender):
 	pass
 
-class doc2vecPaperToResearcher(PaperToResearcher, node2vecRecommender):
+class doc2vecPaperToResearcher(PaperToResearcher, doc2vecRecommender):
 	pass
 
-class doc2vecResearcherToPaper(ResearcherToPaper, node2vecRecommender):
+class doc2vecResearcherToPaper(ResearcherToPaper, doc2vecRecommender):
 	pass
 
-class doc2vecResearcherToResearcher(ResearcherToResearcher, node2vecRecommender):
+class doc2vecResearcherToResearcher(ResearcherToResearcher, doc2vecRecommender):
 	pass
 
-class doc2vecPaperToPaper(PaperToPaper, node2vecRecommender):
+class doc2vecPaperToPaper(PaperToPaper, doc2vecRecommender):
 	pass
 
 class fastppvPaperToResearcher(PaperToResearcher, fastppvRecommender):
