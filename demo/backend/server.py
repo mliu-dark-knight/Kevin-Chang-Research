@@ -45,8 +45,12 @@ class CompareEmbedding(Resource):
 		for arg in ['node1', 'node2', 'name1', 'name2', 'title1', 'title2', 'conference1', 'conference2']:
 			self.parser.add_argument(arg)
 
-	@abstractmethod
 	def getVector(self, node, nodeType, nodeKey):
+		vec = self.getVecName()
+		return list(session.run("match (n:%s) where n.%s = '%s' return n.%s as %s" % (node, nodeType, nodeKey, vec, vec)))
+
+	@abstractmethod
+	def getVecName(self):
 		pass
 
 	def get(self):
@@ -64,20 +68,24 @@ class CompareEmbedding(Resource):
 			assert len(result2) == 1
 		except:
 			raise ValueError("%s does not exist in database" % node)
-		result1 = np.array(map(float, result1[0]['node2vec'].split(' ')))
-		result2 = np.array(map(float, result2[0]['node2vec'].split(' ')))
+		result1 = np.array(map(float, result1[0][self.getVecName()].split(' ')))
+		result2 = np.array(map(float, result2[0][self.getVecName()].split(' ')))
 		diff = ','.join(map(str, result1 - result2))
 		inner = np.inner(result1, result2)
 		l1, l2, cos = cityblock(result1, result2), euclidean(result1, result2), cosine(result1, result2)
 		return json.dumps({'Difference': diff, 'Manhattan Distance': l1, 'Euclidean Distance': l2, 'Cosine Distance': cos, 'Inner Product': inner})
 
 class CompareNode2vec(CompareEmbedding):
-	def getVector(self, node, nodeType, nodeKey):
-		return list(session.run("match (n:%s) where n.%s = '%s' return n.node2vec as node2vec" % (node, nodeType, nodeKey)))
+	def getVecName(self):
+		return "node2vec"
+		
+class CompareDoc2vec(CompareEmbedding):
+	def getVecName(self):
+		return "doc2vec"
 
 class CompareCollaborativeFiltering(CompareEmbedding):
-	def getVector(self, node, nodeType, nodeKey):
-		return list(session.run("match (n:%s) where n.%s = '%s' return n.fastppv as fastppv" % (node, nodeType, nodeKey)))
+	def getVecName(self):
+		return "fastppv"
 
 
 
@@ -226,6 +234,7 @@ session = driver.session()
 
 allApi = {'/BasicInfo': BasicInfo, 
 		  '/CompareEmbedding/node2vec': CompareNode2vec,
+		  '/CompareEmbedding/doc2vec': CompareDoc2vec,
 		  '/CompareEmbedding/fastppv': CompareCollaborativeFiltering,
 		  '/fullpprRecommend/PtoR': fullpprRecommendPtoR,
 		  '/fullpprRecommend/RtoR': fullpprRecommendRtoR,
