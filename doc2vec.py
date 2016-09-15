@@ -5,11 +5,9 @@ import numpy as np
 from gensim.models import Doc2Vec
 from gensim.models.doc2vec import LabeledSentence
 from nltk import word_tokenize, pos_tag
-from pycorenlp import StanfordCoreNLP
 from neo4j.v1 import GraphDatabase, basic_auth
 
 epoch = 50000
-nlp = StanfordCoreNLP('http://localhost:9000')
 valid_POS = set(['NN', 'NNP', 'NNS', 'NNPS', 'JJ', 'JJR', 'JJS'])
 
 def parse_args():
@@ -96,11 +94,11 @@ session = driver.session()
 
 args = parse_args()
 
-query_papers(session)
-convert_to_phrases()
-learn_vectors()
+# query_papers(session)
+# convert_to_phrases()
+# learn_vectors()
 insert_vectors(session)
-aggregate_vectors(session)
+# aggregate_vectors(session)
 
 session.close()
 
