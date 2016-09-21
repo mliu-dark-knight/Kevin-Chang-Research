@@ -15,6 +15,7 @@ def parse_args():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--title', nargs='?', default='title.txt')
 	parser.add_argument('--vector', nargs='?', default='doc2vec.txt')
+	parser.add_argument('--graph', nargs='?', default='karate.edgelist')
 	return parser.parse_args()
 
 
@@ -26,6 +27,7 @@ def extract_phrases(text):
 		if pos in valid_POS:
 			token_buffer.append(token)
 	return token_buffer
+
 
 def query_papers(session):
 	print "Querying titles"
@@ -39,12 +41,13 @@ def query_papers(session):
 
 		for i in xrange(num_node):
 			title_buffer = ""
-			for title in list(session.run("match (n)--(p:Paper) where ID(n) = %d and (n:Researcher or n:Conference) and p.year >= 2010 return p.title as title" % i)):
+			for title in list(session.run("match (n)--(p:Paper) where ID(n) = %d and (n:Researcher or n:Conference) return p.title as title" % i)):
 				title_buffer += (u' '.join(extract_phrases(title['title'])) + ' ')
 			if title_buffer != "":
 				f.write(str(i) + ', ' + title_buffer + '\n')
 				
 	f.close()
+
 
 def learn_vectors():
 	print "Learning embeddings"
@@ -63,6 +66,7 @@ def learn_vectors():
 			f.write(str(labels[i]) + ', ' + ' '.join(map(str, model.docvecs[i])) + '\n')
 	f.close()
 
+
 def insert_vectors(session):
 	print "Saving vectors to db"
 	with open(args.vector, 'r') as f:
@@ -70,6 +74,7 @@ def insert_vectors(session):
 			pair = line[:-1].split(', ', 1)
 			session.run("match (n) where ID(n) = %d set n.doc2vec = '%s'" % (int(pair[0]), pair[1]))
 	f.close()
+
 
 def assign_weight(session):
 	print "Assigning weight to relationships"
@@ -79,7 +84,8 @@ def assign_weight(session):
 			srcID, destID = edge['srcID'], edge['destID']
 			srcVec, destVec = edge['srcVec'], edge['destVec']
 			cos = cosine(map(float, srcVec.split()), map(float, destVec.split()))
-			session.run("match (src)-[r]->(dest) set r.weight = %d" % cos)
+			session.run("match (src)-[r]->(dest) where ID(src) = %d and ID(dest) = %d set r.weight = %f" % (srcID, destID, cos))
+
 
 def aggregate_vectors(session):
 	print "Aggregating doc2vec"
