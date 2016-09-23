@@ -11,9 +11,11 @@ from neo4j.v1 import GraphDatabase, basic_auth
 epoch = 50000
 valid_POS = set(['NN', 'NNP', 'NNS', 'NNPS', 'JJ', 'JJR', 'JJS'])
 
+
 def parse_args():
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--title', nargs='?', default='title.txt')
+	parser.add_argument('--phrase', nargs='?', default='phrase.txt')
+	parser.add_argument('--corpus', nargs='?', default='corpus.txt')
 	parser.add_argument('--vector', nargs='?', default='doc2vec.txt')
 	parser.add_argument('--graph', nargs='?', default='karate.edgelist')
 	return parser.parse_args()
@@ -30,22 +32,43 @@ def extract_phrases(text):
 
 
 def query_papers(session):
-	print "Querying titles"
+	print "Querying papers"
 	num_node = session.run("match (n) return count(*) as count").single()['count']
-	with io.open(args.title, 'w', encoding = 'utf-16') as f:
+	with io.open(args.phrase, 'w', encoding = 'utf-16') as f:
 		for i in xrange(num_node / epoch + 1):
 			lower = i * epoch
 			upper = (i + 1) * epoch
 			for title in list(session.run("match (p:Paper) where ID(p) >= %d and ID(p) < %d return ID(p) as ID, p.title as title" % (lower, upper))):
-				f.write(str(title['ID']) + ', ' + u' '.join(extract_phrases(title['title'])) + '\n')
+				f.write(str(title['ID']) + ', ' + u' '.join(extract_phrases(title['title'])) + '\n')	
+	f.close()
+
+
+def load_phrases():
+	phrases = {}
+	with io.open(args.phrase, 'r', encoding = 'utf-16') as f:
+		for line in f:
+			pair = line.rstrip().split(', ', 1)
+			phrases[int(pair[0])] = pair[1]
+	f.close()
+	return phrases
+
+
+def aggregate_phrases(session):
+	print "Querying papers, researchers and conferences"
+	num_node = session.run("match (n) return count(*) as count").single()['count']
+	with io.open(args.corpus, 'w', encoding = 'utf-16') as f:
+		for i in xrange(num_node / epoch + 1):
+			lower = i * epoch
+			upper = (i + 1) * epoch
+			for paper in list(session.run("match (p:Paper) where ID(p) >= %d and ID(p) < %d return ID(p) as ID" % (lower, upper))):
+				f.write(str(paper['ID']) + ', ' + phrases[paper['ID']] + '\n')				
 
 		for i in xrange(num_node):
 			title_buffer = ""
-			for title in list(session.run("match (n)--(p:Paper) where ID(n) = %d and (n:Researcher or n:Conference) return p.title as title" % i)):
-				title_buffer += (u' '.join(extract_phrases(title['title'])) + ' ')
+			for paper in list(session.run("match (n)--(p:Paper) where ID(n) = %d and (n:Researcher or n:Conference) return ID(p) as ID" % i)):
+				title_buffer += (phrases[paper['ID']] + ' ')
 			if title_buffer != "":
 				f.write(str(i) + ', ' + title_buffer + '\n')
-				
 	f.close()
 
 
@@ -54,7 +77,7 @@ def learn_vectors():
 	document = []
 	labels = []
 	idx = 0
-	with io.open(args.title, 'r', encoding = 'utf-16') as f:
+	with io.open(args.corpus, 'r', encoding = 'utf-16') as f:
 		for line in f:
 			document.append(LabeledSentence(line.split(', ')[1], [idx]))
 			labels.append(line.split(', ')[0])
@@ -87,19 +110,6 @@ def assign_weight(session):
 			session.run("match (src)-[r]->(dest) where ID(src) = %d and ID(dest) = %d set r.weight = %f" % (srcID, destID, cos))
 
 
-def aggregate_vectors(session):
-	print "Aggregating doc2vec"
-	num_node = session.run("match (n) return count(*) as count").single()['count']
-	for i in xrange(num_node):
-		paper_vecs = list(session.run("match (n)--(p:Paper) where ID(n) = %d and (n:Researcher or n:Conference) return p.doc2vec as doc2vec" % i))
-		if len(paper_vecs) == 0:
-			continue
-		doc2vec = np.zeros(64)
-		for paper_vec in paper_vecs:
-			doc2vec += map(float, paper_vec['doc2vec'].split())
-		session.run("match (n) where ID(n) = %d set n.doc2vec = '%s'" % (i, ' '.join(map(str, doc2vec))))
-
-
 
 
 driver = GraphDatabase.driver("bolt://localhost", auth = basic_auth("neo4j", "mliu60"))
@@ -108,9 +118,11 @@ session = driver.session()
 args = parse_args()
 
 query_papers(session)
+phrases = load_phrases()
+aggregate_phrases(session)
 learn_vectors()
-insert_vectors(session)
-assign_weight(session)
+# insert_vectors(session)
+# assign_weight(session)
 
 session.close()
 
