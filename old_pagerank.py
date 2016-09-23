@@ -43,16 +43,17 @@ data = np.empty([num_node + num_edge], dtype = float)
 
 sparse_idx = 0
 for x in xrange(num_node):
-	ys = list(session.run("match (src)--(dest) where ID(src) = %d return ID(dest) as ID" % x))
+	ys = list(session.run("match (src)-[r]-(dest) where ID(src) = %d return ID(dest) as ID, r.weight as weight" % x))
 
 	if len(ys) != 0:
+		weight_sum = sum([y['weight'] for y in ys])
 		prob_out = out / len(ys)
 
 		for y in ys:
 			r = y['ID']
 			col[sparse_idx] = x
 			row[sparse_idx] = r
-			data[sparse_idx] = prob_out
+			data[sparse_idx] = prob_out * y['weight'] / weight_sum
 			sparse_idx += 1
 
 		data[sparse_idx] = prob_stay
