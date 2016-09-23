@@ -3,7 +3,7 @@ from neo4j.v1 import GraphDatabase, basic_auth
 import numpy as np
 from scipy.sparse import csc_matrix
 
-
+weighted = True
 prob_stay = 0.1
 out = 1.0 - prob_stay
 epoch = 50000
@@ -53,7 +53,10 @@ for x in xrange(num_node):
 			r = y['ID']
 			col[sparse_idx] = x
 			row[sparse_idx] = r
-			data[sparse_idx] = prob_out * y['weight'] / weight_sum
+			if weighted:
+				data[sparse_idx] = prob_out * y['weight'] / weight_sum
+			else:
+				data[sparse_idx] = prob_out
 			sparse_idx += 1
 
 		data[sparse_idx] = prob_stay
