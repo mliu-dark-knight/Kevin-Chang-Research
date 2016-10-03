@@ -30,7 +30,7 @@ class Recommender(object):
 		self.startID = self.getStart(input)
 		assert self.startID > -1
 		candidates = self.generateCandidates()
-		rank = self.G.personalized_pagerank(vertices = np.array([candidate["ID"] for candidate in candidates]), directed = False, damping = 0.9, reset_vertices = self.startID)
+		rank = self.G.personalized_pagerank(vertices = np.array([candidate["ID"] for candidate in candidates]), weights='weight', directed = False, damping = 0.9, reset_vertices = self.startID)
 		candidateList = []
 		for i in xrange(len(candidates)):
 			candidateList.append(self.getFormat(candidates[i], rank[i]))

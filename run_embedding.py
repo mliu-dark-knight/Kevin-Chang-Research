@@ -26,13 +26,13 @@ def parse_args():
 	'''
 	parser = argparse.ArgumentParser(description="Run node2vec.")
 
-	parser.add_argument('--input', nargs='?', default='karate.edgelist',
+	parser.add_argument('--input', nargs='?', default='data/karate.edgelist',
 	                    help='Input graph path')
 
 	parser.add_argument('--corpus', nargs='?', default='corpus.txt',
 	                    help='Simulated context using random walk')
 
-	parser.add_argument('--output', nargs='?', default='karate.node2vec',
+	parser.add_argument('--output', nargs='?', default='data/karate.node2vec',
 	                    help='Embeddings path')
 
 	parser.add_argument('--dimensions', type=int, default=64,
@@ -108,11 +108,12 @@ def create_input():
 		for i in xrange(num_node / epoch + 1):
 			lower = i * epoch
 			upper = (i+1) * epoch
-			for edge in list(session.run("match (src)-->(dest) where ID(src) >= %d and ID(src) < %d "\
-										 "return ID(src) as srcID, ID(dest) as destID" % (lower, upper))):
+			for edge in list(session.run("match (src)-[r]->(dest) where ID(src) >= %d and ID(src) < %d "\
+										 "return ID(src) as srcID, ID(dest) as destID, r.weight as weight" % (lower, upper))):
 				srcID = edge['srcID']
 				destID = edge['destID']
-				f.write(str(srcID) + ' ' + str(destID) + '\n')
+				weight = edge['weight']
+				f.write(str(srcID) + ' ' + str(destID) + ' ' + str(weight) + '\n')
 	f.close()
 
 

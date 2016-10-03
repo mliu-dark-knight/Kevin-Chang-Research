@@ -44,11 +44,15 @@ def query_papers(session):
 
 
 def load_phrases():
+	print "Loading phrases"
 	phrases = {}
 	with io.open(args.phrase, 'r', encoding = 'utf-16') as f:
 		for line in f:
 			pair = line.rstrip().split(', ', 1)
-			phrases[int(pair[0])] = pair[1]
+			try:
+				phrases[int(pair[0])] = pair[1]
+			except:
+				pass
 	f.close()
 	return phrases
 
@@ -61,14 +65,23 @@ def aggregate_phrases(session):
 			lower = i * epoch
 			upper = (i + 1) * epoch
 			for paper in list(session.run("match (p:Paper) where ID(p) >= %d and ID(p) < %d return ID(p) as ID" % (lower, upper))):
-				f.write(str(paper['ID']) + ', ' + phrases[paper['ID']] + '\n')				
+				try:
+					f.write(str(paper['ID']) + ', ' + phrases[paper['ID']] + '\n')
+				except:
+					pass			
 
 		for i in xrange(num_node):
 			title_buffer = ""
 			for paper in list(session.run("match (n)--(p:Paper) where ID(n) = %d and (n:Researcher or n:Conference) return ID(p) as ID" % i)):
-				title_buffer += (phrases[paper['ID']] + ' ')
+				try:
+					title_buffer += (phrases[paper['ID']] + ' ')
+				except:
+					pass
 			if title_buffer != "":
-				f.write(str(i) + ', ' + title_buffer + '\n')
+				try:
+					f.write(str(i) + ', ' + title_buffer + '\n')
+				except:
+					pass
 	f.close()
 
 
@@ -106,7 +119,10 @@ def assign_weight(session):
 		for edge in list(session.run("match (src)-[r]->(dest) where ID(src) = %d return ID(src) as srcID, ID(dest) as destID, src.doc2vec as srcVec, dest.doc2vec as destVec" % (i))):
 			srcID, destID = edge['srcID'], edge['destID']
 			srcVec, destVec = edge['srcVec'], edge['destVec']
-			cos = cosine(map(float, srcVec.split()), map(float, destVec.split()))
+			if srcVec == None or destVec == None:
+				cos = 0.0
+			else:
+				cos = cosine(map(float, srcVec.split()), map(float, destVec.split()))
 			session.run("match (src)-[r]->(dest) where ID(src) = %d and ID(dest) = %d set r.weight = %f" % (srcID, destID, cos))
 
 
@@ -121,8 +137,8 @@ query_papers(session)
 phrases = load_phrases()
 aggregate_phrases(session)
 learn_vectors()
-# insert_vectors(session)
-# assign_weight(session)
+insert_vectors(session)
+assign_weight(session)
 
 session.close()
 
