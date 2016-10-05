@@ -90,7 +90,7 @@ class ResearcherToPaper(Recommender):
 		return (candidate["name"], candidate["pagerank"])
 
 	def getFormat(self, candidate, score):
-		return paperFormat((candidate["name"], candidate["pagerank"], score))
+		return researcherFormat((candidate["name"], candidate["pagerank"], score))
 
 
 class ResearcherToResearcher(Recommender):
@@ -105,7 +105,7 @@ class ResearcherToResearcher(Recommender):
 		return (candidate["name"], candidate["pagerank"])
 
 	def getFormat(self, candidate, score):
-		return paperFormat((candidate["name"], candidate["pagerank"], score))
+		return researcherFormat((candidate["name"], candidate["pagerank"], score))
 
 
 class PaperToPaper(Recommender):

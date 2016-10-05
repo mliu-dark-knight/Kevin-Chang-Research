@@ -63,7 +63,7 @@ class fullpprResearcherToPaper(Recommender):
 		return (candidate["name"], candidate["pagerank"])
 
 	def getFormat(self, candidate, score):
-		return paperFormat((candidate["name"], candidate["pagerank"], score))
+		return researcherFormat((candidate["name"], candidate["pagerank"], score))
 
 
 class fullpprResearcherToResearcher(Recommender):
@@ -77,7 +77,7 @@ class fullpprResearcherToResearcher(Recommender):
 		return (candidate["name"], candidate["pagerank"])
 
 	def getFormat(self, candidate, score):
-		return paperFormat((candidate["name"], candidate["pagerank"], score))
+		return researcherFormat((candidate["name"], candidate["pagerank"], score))
 
 
 class fullpprPaperToPaper(Recommender):
