@@ -136,6 +136,10 @@ class fastppvRecommender(Recommender):
 	def getCandidateVec(self):
 		return "fastppv"
 
+class LDARecommender(Recommender):
+	def getCandidateVec(self):
+		return "LDA"
+
 
 
 class node2vecPaperToResearcher(PaperToResearcher, node2vecRecommender):
@@ -172,6 +176,18 @@ class fastppvResearcherToResearcher(ResearcherToResearcher, fastppvRecommender):
 	pass
 
 class fastppvPaperToPaper(PaperToPaper, fastppvRecommender):
+	pass
+
+class LDAPaperToResearcher(PaperToResearcher, LDARecommender):
+	pass
+
+class LDAResearcherToPaper(ResearcherToPaper, LDARecommender):
+	pass
+
+class LDAResearcherToResearcher(ResearcherToResearcher, LDARecommender):
+	pass
+
+class LDAPaperToPaper(PaperToPaper, LDARecommender):
 	pass
 
 

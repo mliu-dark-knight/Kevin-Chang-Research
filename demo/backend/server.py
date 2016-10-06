@@ -87,6 +87,10 @@ class CompareCollaborativeFiltering(CompareEmbedding):
 	def getVecName(self):
 		return "fastppv"
 
+class CompareLDA(CompareEmbedding):
+	def getVecName(self):
+		return "LDA"
+
 
 
 class Recommender(Resource):
@@ -156,6 +160,10 @@ class fastppvRecommendPtoR(RecommendPtoR, embeddingBasedRecommender):
 	def getRecommender(self):
 		return fastppvPaperToResearcher(session)
 
+class LDARecommendPtoR(RecommendPtoR, embeddingBasedRecommender):
+	def getRecommender(self):
+		return LDAPaperToResearcher(session)
+
 
 
 class RecommendRtoR(Recommender):
@@ -177,6 +185,10 @@ class doc2vecRecommendRtoR(RecommendRtoR, embeddingBasedRecommender):
 class fastppvRecommendRtoR(RecommendRtoR, embeddingBasedRecommender):
 	def getRecommender(self):
 		return fastppvResearcherToResearcher(session)
+
+class LDARecommendRtoR(RecommendRtoR, embeddingBasedRecommender):
+	def getRecommender(self):
+		return LDAResearcherToResearcher(session)
 
 
 
@@ -200,6 +212,10 @@ class fastppvRecommendRtoP(RecommendRtoP, embeddingBasedRecommender):
 	def getRecommender(self):
 		return fastppvResearcherToPaper(session)
 
+class LDARecommendRtoP(RecommendRtoP, embeddingBasedRecommender):
+	def getRecommender(self):
+		return LDAResearcherToPaper(session)
+
 
 
 class RecommendPtoP(Recommender):
@@ -222,6 +238,10 @@ class fastppvRecommendPtoP(RecommendPtoP, embeddingBasedRecommender):
 	def getRecommender(self):
 		return fastppvPaperToPaper(session)
 
+class LDARecommendPtoP(RecommendPtoP, embeddingBasedRecommender):
+	def getRecommender(self):
+		return LDAPaperToPaper(session)
+
 
 
 
@@ -236,6 +256,7 @@ allApi = {'/BasicInfo': BasicInfo,
 		  '/CompareEmbedding/node2vec': CompareNode2vec,
 		  '/CompareEmbedding/doc2vec': CompareDoc2vec,
 		  '/CompareEmbedding/fastppv': CompareCollaborativeFiltering,
+		  '/CompareEmbedding/LDA': CompareLDA,
 		  '/fullpprRecommend/PtoR': fullpprRecommendPtoR,
 		  '/fullpprRecommend/RtoR': fullpprRecommendRtoR,
 		  '/fullpprRecommend/RtoP': fullpprRecommendRtoP,
@@ -251,7 +272,11 @@ allApi = {'/BasicInfo': BasicInfo,
 		  '/fastppvRecommend/PtoR': fastppvRecommendPtoR,
 		  '/fastppvRecommend/RtoR': fastppvRecommendRtoR,
 		  '/fastppvRecommend/RtoP': fastppvRecommendRtoP,
-		  '/fastppvRecommend/PtoP': fastppvRecommendPtoP
+		  '/fastppvRecommend/PtoP': fastppvRecommendPtoP,
+		  '/LDARecommend/PtoR': LDARecommendPtoR,
+		  '/LDARecommend/RtoR': LDARecommendRtoR,
+		  '/LDARecommend/RtoP': LDARecommendRtoP,
+		  '/LDARecommend/PtoP': LDARecommendPtoP
 		 }
 for k, v in allApi.iteritems():
 	api.add_resource(v, k)
