@@ -24,7 +24,7 @@ def parse_args():
 	parser.add_argument('--dictionary', nargs='?', default='model/LDA.dict')
 	parser.add_argument('--model', nargs='?', default='model/LDA.model')
 	parser.add_argument('--vector', nargs='?', default='data/LDA.txt')
-	parser.add_argument('--graph', nargs='?', default='data/karate.edgelist')
+	parser.add_argument('--graph', nargs='?', default='data/temp.edgelist')
 	return parser.parse_args()
 
 
@@ -113,13 +113,7 @@ def aggregate_phrases(session):
 
 def build_dictionary():
 	print "Building dictionary"
-	texts = []
-	with io.open(args.corpus, 'r', encoding='utf-16') as f:
-		for line in f:
-			texts.append(line[:-1].split(' '))
-	f.close()
-
-	dictionary = corpora.Dictionary(texts)
+	dictionary = corpora.Dictionary(phrases)
 	dictionary.save(args.dictionary)
 
 
@@ -133,11 +127,11 @@ def learn_LDA():
 
 	dictionary = corpora.Dictionary.load(args.dictionary)
 	corpus = [dictionary.doc2bow(text) for text in texts]
-	# del texts
-	# gc.collect()
+	del texts
+	gc.collect()
 
-	# ldamodel = models.ldamulticore.LdaMulticore(corpus, num_topics=num_topics, id2word=dictionary, passes=20, workers=4)
-	# ldamodel.save(args.model)
+	ldamodel = models.ldamulticore.LdaMulticore(corpus, num_topics=num_topics, id2word=dictionary, passes=20, workers=4)
+	ldamodel.save(args.model)
 
 
 def inference_singlecore(pid, dictionary, ldamodel):
@@ -174,13 +168,12 @@ def inference_multicore():
 
 def topic_terms():
 	dictionary = corpora.Dictionary.load(args.dictionary)
-	for i in xrange(128):
-		print dictionary.get(i)
-	# ldamodel = models.LdaModel.load(args.model, mmap='r')
-	# for i in xrange(num_topics):
-	# 	print 'Topic %d' % i
-	# 	for (id, prob) in ldamodel.get_topic_terms(i, topn=1):
-	# 		print dictionary.get(id), prob
+	ldamodel = models.LdaModel.load(args.model, mmap='r')
+	for i in xrange(num_topics):
+		print '********'
+		print 'Topic %d' % i
+		for (id, prob) in ldamodel.get_topic_terms(i, topn=1):
+			print dictionary.get(id), prob
 
 
 def insert_vectors(session):
@@ -197,8 +190,8 @@ def load_vectors():
 	vectors = {}
 	with open(args.vector, 'r') as f:
 		for line in f:
-			pair = line[:-1].split()
-			vectors[int(pair[0])] = pair[1]
+			pair = line[:-1].split(', ')
+			vectors[int(pair[0])] = np.array(list(map(float, pair[1].split())))
 	f.close()
 	return vectors
 
@@ -210,9 +203,12 @@ def assign_weight(session):
 		for line in f:
 			pair = line[:-1].split()
 			srcID, destID = int(pair[0]), int(pair[1])
-			srcVec, destVec = vectors[srcID], vectors[destID]
-			cos = cosine(map(float, srcVec.split()), map(float, destVec.split()))
-			session.run("match (src)-[r]->(dest) where ID(src) = %d and ID(dest) = %d set r.weight = %f" % (srcID, destID, cos))
+			try:
+				srcVec, destVec = vectors[srcID], vectors[destID]
+				cos = 1.0 - cosine(srcVec, destVec)
+				session.run("match (src)-[r]->(dest) where ID(src) = %d and ID(dest) = %d set r.weight = %f" % (srcID, destID, cos))
+			except:
+				pass
 	f.close()
 
 
@@ -222,16 +218,16 @@ session = driver.session()
 
 args = parse_args()
 
-query_papers(session)
-phrases = load_phrases()
-aggregate_phrases(session)
-build_dictionary()
+# query_papers(session)
+# phrases = load_phrases()
+# aggregate_phrases(session)
+# build_dictionary()
 # learn_LDA()
 # inference_multicore()
 # topic_terms()
 # insert_vectors(session)
-# vectors = load_vectors()
-# assign_weight(session)
+vectors = load_vectors()
+assign_weight(session)
 
 session.close()
 

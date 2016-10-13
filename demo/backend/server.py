@@ -1,4 +1,5 @@
 import json
+import copy
 import numpy as np
 from igraph import *
 from flask import Flask, request
@@ -20,7 +21,7 @@ nodes = {'Researcher': 'name', 'Paper': 'title', 'Conference': 'conference'}
 class BasicInfo(Resource):
 	def __init__(self):
 		super(Resource, self).__init__()
-		self.parser = parser
+		self.parser = copy.deepcopy(parser)
 		for arg in ['node', 'name', 'title', 'conference']:
 			self.parser.add_argument(arg)
 
@@ -38,10 +39,33 @@ class BasicInfo(Resource):
 		return json.dumps({nodeType: result[0][nodeType], 'pagerank': result[0]['PR']})
 
 
+class PublicationHistory(Resource):
+	def __init__(self):
+		super(Resource, self).__init__()
+		self.parser = copy.deepcopy(parser)
+		for arg in ['node', 'name', 'conference', 'limit']:
+			self.parser.add_argument(arg)
+
+	def get(self):
+		args = self.parser.parse_args()
+		node = args['node']
+		nodeType = nodes[node]
+		nodeKey = args[nodeType]
+		limit = int(args['limit'])
+		results = list(session.run(
+			"match (n:%s)-[r]-(p:Paper) where n.%s = '%s' return p.title as title, p.year as year, p.pagerank as pagerank, r.weight as weight order by r.weight desc limit %d"
+			 % (node, nodeType, nodeKey, limit)))
+		try:
+			assert len(results) > 0
+		except:
+			raise ValueError("%s does not exist or does not have associated papers" % node)
+		return json.dumps([{'title': result['title'], 'year': result['year'], 'pagerank': result['pagerank'], 'score': result['weight']} for result in results])
+
+
 class CompareEmbedding(Resource):
 	def __init__(self):
 		super(Resource, self).__init__()
-		self.parser = parser
+		self.parser = copy.deepcopy(parser)
 		for arg in ['node1', 'node2', 'name1', 'name2', 'title1', 'title2', 'conference1', 'conference2']:
 			self.parser.add_argument(arg)
 
@@ -110,7 +134,7 @@ class Recommender(Resource):
 class rankBasedRecommender(Recommender):
 	def __init__(self):
 		super(Recommender, self).__init__()
-		self.parser = parser
+		self.parser = copy.deepcopy(parser)
 		for arg in ['name', 'title', 'conference', 'limit']:
 			self.parser.add_argument(arg)
 
@@ -125,7 +149,7 @@ class rankBasedRecommender(Recommender):
 class embeddingBasedRecommender(Recommender):
 	def __init__(self):
 		super(Recommender, self).__init__()
-		self.parser = parser
+		self.parser = copy.deepcopy(parser)
 		for arg in ['name', 'title', 'conference', 'limit', 'rank_criterion']:
 			self.parser.add_argument(arg)
 
@@ -253,6 +277,7 @@ session = driver.session()
 G = Graph.Read_Ncol('../../karate.edgelist', weights=True, directed = False)
 
 allApi = {'/BasicInfo': BasicInfo, 
+		  '/PublicationHistory': PublicationHistory, 
 		  '/CompareEmbedding/node2vec': CompareNode2vec,
 		  '/CompareEmbedding/doc2vec': CompareDoc2vec,
 		  '/CompareEmbedding/fastppv': CompareCollaborativeFiltering,
