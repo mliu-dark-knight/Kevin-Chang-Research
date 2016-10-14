@@ -24,7 +24,7 @@ def parse_args():
 	parser.add_argument('--dictionary', nargs='?', default='model/LDA.dict')
 	parser.add_argument('--model', nargs='?', default='model/LDA.model')
 	parser.add_argument('--vector', nargs='?', default='data/LDA.txt')
-	parser.add_argument('--graph', nargs='?', default='data/temp.edgelist')
+	parser.add_argument('--graph', nargs='?', default='data/karate.edgelist')
 	return parser.parse_args()
 
 
@@ -218,14 +218,14 @@ session = driver.session()
 
 args = parse_args()
 
-# query_papers(session)
-# phrases = load_phrases()
-# aggregate_phrases(session)
-# build_dictionary()
-# learn_LDA()
-# inference_multicore()
-# topic_terms()
-# insert_vectors(session)
+query_papers(session)
+phrases = load_phrases()
+aggregate_phrases(session)
+build_dictionary()
+learn_LDA()
+inference_multicore()
+topic_terms()
+insert_vectors(session)
 vectors = load_vectors()
 assign_weight(session)
 

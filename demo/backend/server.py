@@ -274,7 +274,7 @@ driver = GraphDatabase.driver("bolt://localhost", auth = basic_auth("neo4j", "ml
 session = driver.session()
 
 # load graph and initialized personalization
-G = Graph.Read_Ncol('../../karate.edgelist', weights=True, directed = False)
+G = Graph.Read_Ncol('../../data/karate.edgelist', weights=True, directed = False)
 
 allApi = {'/BasicInfo': BasicInfo, 
 		  '/PublicationHistory': PublicationHistory, 
