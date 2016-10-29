@@ -58,7 +58,7 @@ def query_papers(session):
 def load_phrases():
 	print "Loading phrases"
 	phrases = {}
-	with io.open(args.word2vec_corpus, 'r', encoding='utf16') as f:
+	with io.open(args.phrase, 'r', encoding='utf16') as f:
 		for line in f:
 			pair = line.rstrip().split(', ', 1)
 			phrases[int(pair[0])] = pair[1]
@@ -74,19 +74,22 @@ def aggregate_phrases(session):
 			for i in xrange(num_node / epoch + 1):
 				lower = i * epoch
 				upper = (i + 1) * epoch
-				for title in list(session.run("match (p:Paper) where ID(p) >= %d and ID(p) < %d return ID(p) as ID, p.title as title" % (lower, upper))):
-					phrase = extract_phrases(title['title'])
-					if phrase != []:
-						fd.write(str(title['ID']) + ', ' + ' '.join(phrase) + '\n')
-						fw.write(' '.join(phrase) + '\n')
+				for paper in list(session.run("match (p:Paper) where ID(p) >= %d and ID(p) < %d return ID(p) as ID" % (lower, upper))):
+					try:
+						fd.write(str(paper['ID']) + ', ' + phrases[paper['ID']] + '\n')
+						fw.write(phrases[paper['ID']] + '\n')
+					except:
+						pass
 
-				min_researcher = session.run("match (r:Researcher) return min(ID(r)) as ID").single()['ID']
-				max_researcher = session.run("match (r:Researcher) return max(ID(r)) as ID").single()['ID']		
-
+			min_researcher = session.run("match (r:Researcher) return min(ID(r)) as ID").single()['ID']
+			max_researcher = session.run("match (r:Researcher) return max(ID(r)) as ID").single()['ID']		
 			for i in xrange(min_researcher, max_researcher + 1, 1):
 				title_buffer = ""
-				for paper in list(session.run("match (r:Researcher)--(p:Paper) where ID(r) = %d return ID(p) as ID" % i)):
-					title_buffer += (phrases[paper['ID']] + ' ')
+				for paper in list(session.run("match (r:Researcher)-->(p:Paper) where ID(r) = %d return ID(p) as ID" % i)):
+					try:
+						title_buffer += (phrases[paper['ID']] + ' ')
+					except:
+						pass
 				if title_buffer != "":
 					fd.write(str(i) + ', ' + title_buffer + '\n')
 					fw.write(title_buffer + '\n')
@@ -95,8 +98,11 @@ def aggregate_phrases(session):
 			max_conference = session.run("match (c:Conference) return max(ID(c)) as ID").single()['ID']
 			for i in xrange(min_conference, max_conference + 1, 1):
 				title_buffer = ""
-				for paper in list(session.run("match (c:Conference)--(p:Paper) where ID(c) = %d return ID(p) as ID" % i)):
-					title_buffer += (phrases[paper['ID']] + ' ')
+				for paper in list(session.run("match (c:Conference)<--(p:Paper) where ID(c) = %d return ID(p) as ID" % i)):
+					try:
+						title_buffer += (phrases[paper['ID']] + ' ')
+					except:
+						pass
 				if title_buffer != "":
 					fd.write(str(i) + ', ' + title_buffer + '\n')
 					fw.write(title_buffer + '\n')
@@ -170,17 +176,26 @@ def doc2vec():
 
 	# load node vectors
 	for node in node_vectors:
-		model.docvecs.doctag_syn0[model.docvecs._int_index(node)] = node_vectors[node]
+		try:
+			model.docvecs.doctag_syn0[model.docvecs._int_index(node)] = node_vectors[node]
+		except:
+			pass
 
 	model.train(doc2vec_sentence)
 
 	# save word vectors
 	for word in word_vectors:
-		word_vectors[word] = model[word]
+		try:
+			word_vectors[word] = model[word]
+		except:
+			pass
 
 	# save node vectors
 	for node in node_vectors:
-		node_vectors[node] = model.docvecs[node]
+		try:
+			node_vectors[node] = model.docvecs[node]
+		except:
+			pass
 
 
 def save_vectors(word2vec=False, node2vec=True):
@@ -198,18 +213,30 @@ def save_vectors(word2vec=False, node2vec=True):
 				f.write(node + ' ' + ' '.join(map(str, vector)) + '\n')
 		f.close()
 
+def insert_vectors():
+	print "Inserting vectors to db"
+	with open(args.node2vec_vector, 'r') as f:
+		next(f)
+		for line in f:
+			line = line[:-1].split(' ', 1)
+			nodeID = int(line[0])
+			vec = line[1]
+			session.run("match (n) where ID(n) = %d set n.joint = '%s'" % (nodeID, vec))
+	f.close()
+
+
 
 def fit():
 	print "Learning embedding"
+	print "Iteration 0"
 	word2vec(False)
 	node2vec(False)
 	for i in xrange(iteration - 1):
 		doc2vec()
-		print "Iteration %d" % i
+		print "Iteration %d" % (i + 1)
 		word2vec(True)
 		node2vec(True)
 	doc2vec()
-	print "Iteration" % i
 	save_vectors()
 
 
@@ -222,14 +249,16 @@ query_papers(session)
 phrases = load_phrases()
 aggregate_phrases(session)
 
-# word_vectors = {}
-# node_vectors = {}
+word_vectors = {}
+node_vectors = {}
 
-# word2vec_sentence = load_word2vec_sentence()
-# doc2vec_sentence = load_doc2vec_sentence()
-# node2vec_sentence = load_node2vec_sentence()
+word2vec_sentence = load_word2vec_sentence()
+doc2vec_sentence = load_doc2vec_sentence()
+node2vec_sentence = load_node2vec_sentence()
 
-# fit()
+fit()
+
+insert_vectors()
 
 session.close()
 

@@ -140,6 +140,10 @@ class LDARecommender(Recommender):
 	def getCandidateVec(self):
 		return "LDA"
 
+class jointRecommender(Recommender):
+	def getCandidateVec(self):
+		return "joint"
+
 
 
 class node2vecPaperToResearcher(PaperToResearcher, node2vecRecommender):
@@ -188,6 +192,18 @@ class LDAResearcherToResearcher(ResearcherToResearcher, LDARecommender):
 	pass
 
 class LDAPaperToPaper(PaperToPaper, LDARecommender):
+	pass
+
+class jointPaperToResearcher(PaperToResearcher, jointRecommender):
+	pass
+
+class jointResearcherToPaper(ResearcherToPaper, jointRecommender):
+	pass
+
+class jointResearcherToResearcher(ResearcherToResearcher, jointRecommender):
+	pass
+
+class jointPaperToPaper(PaperToPaper, jointRecommender):
 	pass
 
 

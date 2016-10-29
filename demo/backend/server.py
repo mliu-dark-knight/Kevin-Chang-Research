@@ -115,6 +115,10 @@ class CompareLDA(CompareEmbedding):
 	def getVecName(self):
 		return "LDA"
 
+class CompareJoint(CompareEmbedding):
+	def getVecName(self):
+		return "joint"
+
 
 
 class Recommender(Resource):
@@ -188,6 +192,10 @@ class LDARecommendPtoR(RecommendPtoR, embeddingBasedRecommender):
 	def getRecommender(self):
 		return LDAPaperToResearcher(session)
 
+class jointRecommendPtoR(RecommendPtoR, embeddingBasedRecommender):
+	def getRecommender(self):
+		return jointPaperToResearcher(session)
+
 
 
 class RecommendRtoR(Recommender):
@@ -213,6 +221,10 @@ class fastppvRecommendRtoR(RecommendRtoR, embeddingBasedRecommender):
 class LDARecommendRtoR(RecommendRtoR, embeddingBasedRecommender):
 	def getRecommender(self):
 		return LDAResearcherToResearcher(session)
+
+class jointRecommendRtoR(RecommendRtoR, embeddingBasedRecommender):
+	def getRecommender(self):
+		return jointResearcherToResearcher(session)
 
 
 
@@ -240,6 +252,10 @@ class LDARecommendRtoP(RecommendRtoP, embeddingBasedRecommender):
 	def getRecommender(self):
 		return LDAResearcherToPaper(session)
 
+class jointRecommendRtoP(RecommendRtoP, embeddingBasedRecommender):
+	def getRecommender(self):
+		return jointResearcherToPaper(session)
+
 
 
 class RecommendPtoP(Recommender):
@@ -266,6 +282,9 @@ class LDARecommendPtoP(RecommendPtoP, embeddingBasedRecommender):
 	def getRecommender(self):
 		return LDAPaperToPaper(session)
 
+class jointRecommendPtoP(RecommendPtoP, embeddingBasedRecommender):
+	def getRecommender(self):
+		return jointPaperToPaper(session)
 
 
 
@@ -282,6 +301,7 @@ allApi = {'/BasicInfo': BasicInfo,
 		  '/CompareEmbedding/doc2vec': CompareDoc2vec,
 		  '/CompareEmbedding/fastppv': CompareCollaborativeFiltering,
 		  '/CompareEmbedding/LDA': CompareLDA,
+		  '/CompareEmbedding/joint': CompareJoint,
 		  '/fullpprRecommend/PtoR': fullpprRecommendPtoR,
 		  '/fullpprRecommend/RtoR': fullpprRecommendRtoR,
 		  '/fullpprRecommend/RtoP': fullpprRecommendRtoP,
@@ -301,7 +321,11 @@ allApi = {'/BasicInfo': BasicInfo,
 		  '/LDARecommend/PtoR': LDARecommendPtoR,
 		  '/LDARecommend/RtoR': LDARecommendRtoR,
 		  '/LDARecommend/RtoP': LDARecommendRtoP,
-		  '/LDARecommend/PtoP': LDARecommendPtoP
+		  '/LDARecommend/PtoP': LDARecommendPtoP,
+		  '/jointRecommend/PtoR': jointRecommendPtoR,
+		  '/jointRecommend/RtoR': jointRecommendRtoR,
+		  '/jointRecommend/RtoP': jointRecommendRtoP,
+		  '/jointRecommend/PtoP': jointRecommendPtoP
 		 }
 for k, v in allApi.iteritems():
 	api.add_resource(v, k)
