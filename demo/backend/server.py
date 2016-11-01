@@ -18,12 +18,17 @@ parser = reqparse.RequestParser()
 nodes = {'Researcher': 'name', 'Paper': 'title', 'Conference': 'conference'}
 
 
-class BasicInfo(Resource):
-	def __init__(self):
-		super(Resource, self).__init__()
+class Base(Resource):
+	def __init__(self, args):
+		Resource.__init__(self)
 		self.parser = copy.deepcopy(parser)
-		for arg in ['node', 'name', 'title', 'conference']:
+		for arg in args:
 			self.parser.add_argument(arg)
+
+
+class BasicInfo(Base):
+	def __init__(self):
+		Base.__init__(self, ['node', 'name', 'title', 'conference'])
 
 	def get(self):
 		args = self.parser.parse_args()
@@ -39,13 +44,10 @@ class BasicInfo(Resource):
 		return json.dumps({nodeType: result[0][nodeType], 'pagerank': result[0]['PR']})
 
 
-class PublicationHistory(Resource):
+class PublicationHistory(Base):
 	def __init__(self):
-		super(Resource, self).__init__()
-		self.parser = copy.deepcopy(parser)
-		for arg in ['node', 'name', 'conference', 'limit']:
-			self.parser.add_argument(arg)
-
+		Base.__init__(self, ['node', 'name', 'conference', 'limit'])
+		
 	def get(self):
 		args = self.parser.parse_args()
 		node = args['node']
@@ -62,12 +64,9 @@ class PublicationHistory(Resource):
 		return json.dumps([{'title': result['title'], 'year': result['year'], 'pagerank': result['pagerank'], 'score': result['weight']} for result in results])
 
 
-class CompareEmbedding(Resource):
+class CompareEmbedding(Base):
 	def __init__(self):
-		super(Resource, self).__init__()
-		self.parser = copy.deepcopy(parser)
-		for arg in ['node1', 'node2', 'name1', 'name2', 'title1', 'title2', 'conference1', 'conference2']:
-			self.parser.add_argument(arg)
+		Base.__init__(self, ['node1', 'node2', 'name1', 'name2', 'title1', 'title2', 'conference1', 'conference2'])
 
 	def getVector(self, node, nodeType, nodeKey):
 		vec = self.getVecName()
