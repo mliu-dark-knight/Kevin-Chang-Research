@@ -14,8 +14,7 @@ from scipy.spatial.distance import cosine
 
 epoch = 50000
 valid_POS = set(['NN', 'NNP', 'NNS', 'NNPS', 'JJ', 'JJR', 'JJS', 'VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ'])
-num_process = 8
-iteration = 20
+
 
 def parse_args():
 	parser = argparse.ArgumentParser()
@@ -92,7 +91,6 @@ def aggregate_phrases(session):
 						pass
 				if title_buffer != "":
 					fd.write(str(i) + ', ' + title_buffer + '\n')
-					fw.write(title_buffer + '\n')
 
 			min_conference = session.run("match (c:Conference) return min(ID(c)) as ID").single()['ID']
 			max_conference = session.run("match (c:Conference) return max(ID(c)) as ID").single()['ID']
@@ -105,7 +103,6 @@ def aggregate_phrases(session):
 						pass
 				if title_buffer != "":
 					fd.write(str(i) + ', ' + title_buffer + '\n')
-					fw.write(title_buffer + '\n')
 		fd.close()
 	fw.close()
 
@@ -124,94 +121,100 @@ def load_word2vec_sentence():
 	return LineSentence(io.open(args.word2vec_corpus, 'r', encoding='utf-16'))
 
 def load_doc2vec_sentence():
-	sentences = []
-	with io.open(args.doc2vec_corpus, 'r', encoding='utf-16') as f:
-		for line in f:
-			pair = line[:-1].split(', ')
-			sentences.append(LabeledSentence(words=pair[1].split(), tags=[pair[0]]))
-	f.close()
-	return sentences
+	return LabeledLineSentence(io.open(args.doc2vec_corpus, 'r', encoding='utf-16'))
 
 def load_node2vec_sentence():
 	return LineSentence(open(args.node2vec_corpus, 'r'))
 
 
 
-def embedding(corpus=None, vectors=None, prior=None, window=None, fname=None):
-	if prior:
-		model = Word2Vec(size=args.dimension, window=window, min_count=1, workers=num_process, iter=1)
-		model.build_vocab(corpus)
-		for word, vocab in sorted(iteritems(model.vocab), key=lambda item: -item[1].count):
-			model.syn0[vocab.index] = vectors[word]
-		model.train(corpus)
-	else:
-		model = Word2Vec(sentences=corpus, size=args.dimension, window=window, min_count=1, workers=num_process, iter=1)
+class JointEmbedding(object):
+	def __init__(self, num_process=8):
+		self.word2vec_model = Word2Vec(size=args.dimension, window=4, min_count=1, workers=num_process, iter=1)
+		self.node2vec_model = Word2Vec(size=args.dimension, window=2, min_count=1, workers=num_process, iter=1)
+		self.doc2vec_model = Doc2Vec(size=args.dimension, window=4, min_count=1, workers=num_process, dm_concat=1, iter=1)
+		self.word_vectors = {}
+		self.node_vectors = {}
+		self.build_vocab()
+		self.fit()
 
-	for word, vocab in sorted(iteritems(model.vocab), key=lambda item: -item[1].count):
-   		vectors[word] = model.syn0[vocab.index]
+	def build_vocab(self):
+		print "Building vocabulary"
+		self.word2vec_model.build_vocab(word2vec_sentence)
+		self.node2vec_model.build_vocab(node2vec_sentence)
+		self.doc2vec_model.build_vocab(doc2vec_sentence)
 
-	if fname:
-		model.save_word2vec_format(fname)
+	def fit(self, iteration=20):
+		print "Learning embedding"
+		print "Iteration 0"
+		self.word2vec(False)
+		self.node2vec(False)
+		for i in xrange(iteration - 1):
+			self.doc2vec()
+			print "Iteration %d" % (i + 1)
+			self.word2vec(True)
+			self.node2vec(True)
+		self.doc2vec()
+		self.save_vectors()
 
-
-def word2vec(prior):
-	embedding(corpus=word2vec_sentence, vectors=word_vectors, prior=prior, window=4)
-
-
-def node2vec(prior):
-	embedding(corpus=node2vec_sentence, vectors=node_vectors, prior=prior, window=2)
-
-
-
-def doc2vec():
-	model = Doc2Vec(size=64, window=4, min_count=1, workers=num_process, dm_concat=1, iter=1)
-	model.build_vocab(doc2vec_sentence)
-
-	# load word vectors
-	for i in xrange(len(model.syn0)):
-		try:
-			model.syn0[i] = word_vectors[model.index2word[i]]
-		except:
-			pass
-
-	# load node vectors
-	for node in node_vectors:
-		try:
-			model.docvecs.doctag_syn0[model.docvecs._int_index(node)] = node_vectors[node]
-		except:
-			pass
-
-	model.train(doc2vec_sentence)
-
-	# save word vectors
-	for word in word_vectors:
-		try:
-			word_vectors[word] = model[word]
-		except:
-			pass
-
-	# save node vectors
-	for node in node_vectors:
-		try:
-			node_vectors[node] = model.docvecs[node]
-		except:
-			pass
+	def word2vec(self, prior):
+		if prior:
+			for word, vocab in iteritems(self.word2vec_model.vocab):
+				self.word2vec_model.syn0[vocab.index] = self.word_vectors[word]
+		self.word2vec_model.train(word2vec_sentence)
+		for word, vocab in iteritems(self.word2vec_model.vocab):
+   			self.word_vectors[word] = self.word2vec_model.syn0[vocab.index]
 
 
-def save_vectors(word2vec=False, node2vec=True):
-	if word2vec:
-		with io.open(args.word2vec_vector, 'w', encoding='utf-16') as f:
-			f.write(str(len(word_vectors)) + u' ' + str(args.dimension) + '\n')
-			for word, vector in word_vectors.iteritems():
-				f.write(word + ' ' + ' '.join(map(str, vector)) + '\n')
-		f.close()
+	def node2vec(self, prior):
+		if prior:
+			for node, vocab in iteritems(self.node2vec_model.vocab):
+				self.node2vec_model.syn0[vocab.index] = self.node_vectors[node]
+		self.node2vec_model.train(node2vec_sentence)
+		for node, vocab in iteritems(self.node2vec_model.vocab):
+   			self.node_vectors[node] = self.node2vec_model.syn0[vocab.index]
 
-	if node2vec:
-		with open(args.node2vec_vector, 'w') as f:
-			f.write(str(len(node_vectors)) + ' ' + str(args.dimension) + '\n')
-			for node, vector in node_vectors.iteritems():
-				f.write(node + ' ' + ' '.join(map(str, vector)) + '\n')
-		f.close()
+	def doc2vec(self):
+		for word, vocab in iteritems(self.doc2vec_model.vocab):
+			try:
+				self.doc2vec_model.syn0[vocab.index] = self.word_vectors[word]
+			except:
+				pass
+		for node in self.node_vectors:
+			try:
+				self.doc2vec_model.docvecs.doctag_syn0[self.doc2vec_model.docvecs._int_index(node)] = self.node_vectors[node]
+			except:
+				pass
+
+		self.doc2vec_model.train(doc2vec_sentence)
+
+		for word in self.word_vectors:
+			try:
+				self.word_vectors[word] = self.doc2vec_model[word]
+			except:
+				pass
+		for node in self.node_vectors:
+			try:
+				self.node_vectors[node] = self.doc2vec_model.docvecs[node]
+			except:
+				pass
+
+	def save_vectors(self, word2vec=False, node2vec=True):
+		print "Saving vectors"
+		if word2vec:
+			with io.open(args.word2vec_vector, 'w', encoding='utf-16') as f:
+				f.write(str(len(self.word_vectors)) + u' ' + str(args.dimension) + '\n')
+				for word, vector in self.word_vectors.iteritems():
+					f.write(word + ' ' + ' '.join(map(str, vector)) + '\n')
+			f.close()
+
+		if node2vec:
+			with open(args.node2vec_vector, 'w') as f:
+				f.write(str(len(self.node_vectors)) + ' ' + str(args.dimension) + '\n')
+				for node, vector in self.node_vectors.iteritems():
+					f.write(node + ' ' + ' '.join(map(str, vector)) + '\n')
+			f.close()
+
 
 def insert_vectors():
 	print "Inserting vectors to db"
@@ -226,38 +229,20 @@ def insert_vectors():
 
 
 
-def fit():
-	print "Learning embedding"
-	print "Iteration 0"
-	word2vec(False)
-	node2vec(False)
-	for i in xrange(iteration - 1):
-		doc2vec()
-		print "Iteration %d" % (i + 1)
-		word2vec(True)
-		node2vec(True)
-	doc2vec()
-	save_vectors()
-
-
 driver = GraphDatabase.driver("bolt://localhost", auth = basic_auth("neo4j", "mliu60"))
 session = driver.session()
 
 args = parse_args()
 
-query_papers(session)
-phrases = load_phrases()
-aggregate_phrases(session)
+# query_papers(session)
+# phrases = load_phrases()
+# aggregate_phrases(session)
 
-word_vectors = {}
-node_vectors = {}
+# word2vec_sentence = load_word2vec_sentence()
+# doc2vec_sentence = load_doc2vec_sentence()
+# node2vec_sentence = load_node2vec_sentence()
 
-word2vec_sentence = load_word2vec_sentence()
-doc2vec_sentence = load_doc2vec_sentence()
-node2vec_sentence = load_node2vec_sentence()
-
-fit()
-
+# JointEmbedding()
 insert_vectors()
 
 session.close()
