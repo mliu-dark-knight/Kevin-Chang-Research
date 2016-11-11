@@ -207,23 +207,23 @@ class fullpprRecommendRtoR(RecommendRtoR, rankBasedRecommender):
 
 class node2vecRecommendRtoR(RecommendRtoR, embeddingBasedRecommender):
 	def getRecommender(self):
-		return node2vecResearcherToResearcher(session)
+		return node2vecResearcherToResearcher(session, G)
 
 class doc2vecRecommendRtoR(RecommendRtoR, embeddingBasedRecommender):
 	def getRecommender(self):
-		return doc2vecResearcherToResearcher(session)
+		return doc2vecResearcherToResearcher(session, G)
 
 class fastppvRecommendRtoR(RecommendRtoR, embeddingBasedRecommender):
 	def getRecommender(self):
-		return fastppvResearcherToResearcher(session)
+		return fastppvResearcherToResearcher(session, G)
 
 class LDARecommendRtoR(RecommendRtoR, embeddingBasedRecommender):
 	def getRecommender(self):
-		return LDAResearcherToResearcher(session)
+		return LDAResearcherToResearcher(session, G)
 
 class jointRecommendRtoR(RecommendRtoR, embeddingBasedRecommender):
 	def getRecommender(self):
-		return jointResearcherToResearcher(session)
+		return jointResearcherToResearcher(session, G)
 
 
 
@@ -292,7 +292,7 @@ driver = GraphDatabase.driver("bolt://localhost", auth = basic_auth("neo4j", "ml
 session = driver.session()
 
 # load graph and initialized personalization
-# G = Graph.Read_Ncol('../../data/karate.edgelist', weights=True, directed = False)
+G = Graph.Read_Ncol('../../data/karate.edgelist', weights=False, directed = False)
 
 allApi = {'/BasicInfo': BasicInfo, 
 		  '/PublicationHistory': PublicationHistory, 
