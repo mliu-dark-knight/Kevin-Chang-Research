@@ -120,13 +120,6 @@ class ResearcherToResearcher(Recommender):
 		assert self.startID > -1
 		candidates = self.generateCandidates()
 
-		candidateInfo = {}
-		candidateList = []
-		for candidate in candidates:
-			score = self.getRank(candidate, rank_policy)
-			candidateList.append({"ID": candidate["ID"], "score": score})
-			candidateInfo[candidate["ID"]] = {"name": candidate["name"], "pagerank": candidate["pagerank"]}
-
 		paperCandidates = self.generatePaperCandidates()
 		paperList = [{"ID": candidate["ID"], "score": self.getRank(candidate, rank_policy)} for candidate in paperCandidates]
 		if rank_policy == "Inner Product":
@@ -136,9 +129,7 @@ class ResearcherToResearcher(Recommender):
 		paperSeeds = [paper["ID"] for paper in paperList[:20]]
 
 		rank = self.G.personalized_pagerank(vertices = np.array([candidate["ID"] for candidate in candidates]), directed = False, damping = 0.9, reset_vertices = [self.startID] + paperSeeds)
-		candidateList = []
-		for i in xrange(len(candidates)):
-			candidateList.append(self.getFormat(candidateInfo[candidates[i]["ID"]], rank[i]))
+		candidateList = [self.getFormat(candidate[i], rank[i]) for i in xrange(len(candidates))]
 		candidateList.sort(key = lambda c: c["score"], reverse = True)
 
 		return candidateList[:limit]
