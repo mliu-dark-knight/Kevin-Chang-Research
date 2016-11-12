@@ -50,9 +50,9 @@ class Recommender(object):
 		candidates = self.generateCandidates()
 		candidateList = [self.getFormat(candidate, self.getRank(candidate, rank_policy)) for candidate in candidates]
 		if rank_policy == "Inner Product":
-			candidateList.sort(key = lambda c: c["score"], reverse = True)
+			candidateList.sort(key=lambda c: c["score"], reverse=True)
 		else:
-			candidateList.sort(key = lambda c: c["score"], reverse = False)
+			candidateList.sort(key=lambda c: c["score"], reverse=False)
 		return candidateList[:limit]
 
 	def getRank(self, candidate, rank_policy):
@@ -101,7 +101,7 @@ class ResearcherToResearcher(Recommender):
 
 	def generateCandidates(self):
 		vec = self.getCandidateVec()
-		return list(self.session.run("match (r1:Researcher)-[*1..4]-(r2:Researcher) where ID(r1) = %d and exists(r2.%s) and not ID(r1) = ID(r2) return distinct(ID(r2)) as ID, r2.name as name, r2.pagerank as pageranks" % (self.startID, vec)))
+		return list(self.session.run("match (r1:Researcher)-[*1..4]-(r2:Researcher) where ID(r1) = %d and exists(r2.%s) and not ID(r1) = ID(r2) return distinct(ID(r2)) as ID, r2.name as name, r2.pagerank as pagerank, r2.%s as %s" % (self.startID, vec, vec, vec)))
 
 	def getProperty(self, candidate):
 		return (candidate["name"], candidate["pagerank"])
@@ -120,17 +120,25 @@ class ResearcherToResearcher(Recommender):
 		assert self.startID > -1
 		candidates = self.generateCandidates()
 
-		paperCandidates = self.generatePaperCandidates()
-		paperList = [{"ID": candidate["ID"], "score": self.getRank(candidate, rank_policy)} for candidate in paperCandidates]
+		candidateList = [{"ID": candidate["ID"], "name": candidate["name"], "pagerank": candidate["pagerank"], "score": self.getRank(candidate, rank_policy)} for candidate in candidates]
 		if rank_policy == "Inner Product":
-			paperList.sort(key = lambda c: c["score"], reverse = True)
+			candidateList.sort(key=lambda c: c["score"], reverse=True)
 		else:
-			paperList.sort(key = lambda c: c["score"], reverse = False)
-		paperSeeds = [paper["ID"] for paper in paperList[:20]]
+			candidateList.sort(key=lambda c: c["score"], reverse=False)
+		candidates = candidateList[:100]
 
-		rank = self.G.personalized_pagerank(vertices = np.array([candidate["ID"] for candidate in candidates]), directed = False, damping = 0.9, reset_vertices = [self.startID] + paperSeeds)
-		candidateList = [self.getFormat(candidate[i], rank[i]) for i in xrange(len(candidates))]
-		candidateList.sort(key = lambda c: c["score"], reverse = True)
+		# paperCandidates = self.generatePaperCandidates()
+		# paperList = [{"ID": candidate["ID"], "score": self.getRank(candidate, rank_policy)} for candidate in paperCandidates]
+		# if rank_policy == "Inner Product":
+		# 	paperList.sort(key=lambda c: c["score"], reverse=True)
+		# else:
+		# 	paperList.sort(key=lambda c: c["score"], reverse=False)
+		# paperSeeds = [paper["ID"] for paper in paperList[:20]]
+
+		# rank = self.G.personalized_pagerank(vertices=np.array([candidate["ID"] for candidate in candidates]), directed=False, damping=0.8, reset_vertices=paperSeeds, implementation="power", niter=16)
+		rank = self.G.personalized_pagerank(vertices=np.array([candidate["ID"] for candidate in candidates]), directed=False, damping=0.8, reset_vertices=self.startID, implementation="power", niter=16)
+		candidateList = [self.getFormat(candidates[i], rank[i]) for i in xrange(len(candidates))]
+		candidateList.sort(key=lambda c: c["score"], reverse=True)
 
 		return candidateList[:limit]
 
