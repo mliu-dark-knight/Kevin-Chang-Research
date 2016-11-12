@@ -125,18 +125,9 @@ class ResearcherToResearcher(Recommender):
 			candidateList.sort(key=lambda c: c["score"], reverse=True)
 		else:
 			candidateList.sort(key=lambda c: c["score"], reverse=False)
-		candidates = candidateList[:100]
+		candidates = candidateList[: len(candidateList) / 100]
 
-		paperCandidates = self.generatePaperCandidates()
-		paperList = [{"ID": candidate["ID"], "score": self.getRank(candidate, rank_policy)} for candidate in paperCandidates]
-		if rank_policy == "Inner Product":
-			paperList.sort(key=lambda c: c["score"], reverse=True)
-		else:
-			paperList.sort(key=lambda c: c["score"], reverse=False)
-		paperSeeds = [paper["ID"] for paper in paperList[:20]]
-
-		rank = self.G.personalized_pagerank(vertices=np.array([candidate["ID"] for candidate in candidates]), directed=False, damping=0.8, reset_vertices=paperSeeds, implementation="power", niter=16)
-		# rank = self.G.personalized_pagerank(vertices=np.array([candidate["ID"] for candidate in candidates]), directed=False, damping=0.8, reset_vertices=self.startID, implementation="power", niter=16)
+		rank = self.G.personalized_pagerank(vertices=np.array([candidate["ID"] for candidate in candidates]), directed=False, damping=0.8, reset_vertices=self.startID, implementation="power", niter=16)
 		candidateList = [self.getFormat(candidates[i], rank[i]) for i in xrange(len(candidates))]
 		candidateList.sort(key=lambda c: c["score"], reverse=True)
 
