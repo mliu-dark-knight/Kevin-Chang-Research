@@ -109,10 +109,6 @@ class ResearcherToResearcher(Recommender):
 	def getFormat(self, candidate, score):
 		return researcherFormat((candidate["name"], candidate["pagerank"], score))
 
-	def generatePaperCandidates(self):
-		vec = self.getCandidateVec()
-		return list(self.session.run("match (r:Researcher)-[*1..3]-(p:Paper) where ID(r) = %d and exists(p.%s) and not (r)-[:AuthorOf]-(p) return distinct(ID(p)) as ID, p.%s as %s" % (self.startID, vec, vec, vec)))
-
 	def recommend(self, input, limit, rank_policy):
 		if rank_policy not in self.func:
 			raise ValueError("Ranking policy does not exist.")
