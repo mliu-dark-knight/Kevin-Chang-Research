@@ -123,8 +123,14 @@ class ResearcherToResearcher(Recommender):
 			candidateList.sort(key=lambda c: c["score"], reverse=False)
 		candidates = candidateList[: len(candidateList) / 100]
 
-		rank = self.G.personalized_pagerank(vertices=np.array([candidate["ID"] for candidate in candidates]), directed=False, damping=0.8, reset_vertices=self.startID, implementation="power", niter=16)
-		candidateList = [self.getFormat(candidates[i], rank[i]) for i in xrange(len(candidates))]
+		dict_idx = {}
+		for i in xrange(len(candidates)):
+			dict_idx[str(candidates[i]['ID'])] = i
+
+		query_vertices = self.G.vs(name_in=[str(candidate["ID"]) for candidate in candidates])
+
+		rank = self.G.personalized_pagerank(vertices=[v.index for v in query_vertices], directed=False, damping=0.8, reset_vertices=self.G.vs(name_eq=str(self.startID)), weights='weight', implementation='arpack')
+		candidateList = [self.getFormat(candidates[dict_idx[query_vertices[i]['name']]], rank[i]) for i in xrange(len(candidates))]
 		candidateList.sort(key=lambda c: c["score"], reverse=True)
 
 		return candidateList[:limit]

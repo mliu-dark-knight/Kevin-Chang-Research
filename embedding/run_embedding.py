@@ -25,7 +25,7 @@ def parse_args():
 	'''
 	parser = argparse.ArgumentParser(description="Run node2vec.")
 
-	parser.add_argument('--input', nargs='?', default='data/karate.edgelist',
+	parser.add_argument('--input', nargs='?', default='../data/karate.edgelist',
 	                    help='Input graph path')
 
 	parser.add_argument('--corpus', nargs='?', default='corpus.txt',
@@ -107,11 +107,12 @@ def create_input():
 		for i in xrange(num_node / epoch + 1):
 			lower = i * epoch
 			upper = (i+1) * epoch
-			for edge in list(session.run("match (src)-->(dest) where ID(src) >= %d and ID(src) < %d "\
-										 "return ID(src) as srcID, ID(dest) as destID" % (lower, upper))):
+			for edge in list(session.run("match (src)-[r]->(dest) where ID(src) >= %d and ID(src) < %d "\
+										 "return ID(src) as srcID, ID(dest) as destID, r.weight as weight" % (lower, upper))):
 				srcID = edge['srcID']
 				destID = edge['destID']
-				f.write(str(srcID) + ' ' + str(destID) + '\n')
+				weight = edge['weight']
+				f.write(str(srcID) + ' ' + str(destID) + ' ' + str(weight) + '\n')
 	f.close()
 
 
@@ -136,16 +137,16 @@ def main(args):
 	Pipeline for representational learning for all nodes in a graph.
 	'''
 	create_input()
-	nx_G = read_graph()
-	G = node2vec.Graph(nx_G, args.directed, args.p, args.q)
-	del nx_G
-	gc.collect()
-	G.preprocess_transition_probs()
-	G.simulate_walks(args.num_walks, args.walk_length, args.corpus)
-	del G
-	gc.collect()
-	learn_embeddings(args.corpus)
-	save_output()
+	# nx_G = read_graph()
+	# G = node2vec.Graph(nx_G, args.directed, args.p, args.q)
+	# del nx_G
+	# gc.collect()
+	# G.preprocess_transition_probs()
+	# G.simulate_walks(args.num_walks, args.walk_length, args.corpus)
+	# del G
+	# gc.collect()
+	# learn_embeddings(args.corpus)
+	# save_output()
 
 
 driver = GraphDatabase.driver("bolt://localhost", auth = basic_auth("neo4j", "mliu60"))

@@ -6,6 +6,7 @@ import htmlentitydefs
 import csv
 import sys
 import re
+import numpy as np
 
 
 reload(sys)
@@ -15,9 +16,9 @@ sys.setdefaultencoding('utf-8')
 Paper = namedtuple("Paper", "paperID, title, year, label")
 Researcher = namedtuple("Researcher", "name, label")
 Conference = namedtuple("Conference", "conference, label")
-AuthorOf = namedtuple("AuthorOf", "name, paperID, type")
-PublishAt = namedtuple("PublishAt", "paperID, conference, type")
-Reference = namedtuple("Reference", "paperID, sourceID, type")
+AuthorOf = namedtuple("AuthorOf", "name, weight, paperID, type")
+PublishAt = namedtuple("PublishAt", "paperID, weight, conference, type")
+Reference = namedtuple("Reference", "paperID, weight, sourceID, type")
 
 
 papers = []
@@ -37,6 +38,9 @@ dict_reference = set()
 def strip_comma(input):
 	return input.strip().replace(',', '').replace('\"', '')
 
+def weight(year):
+	return np.exp((int(year) - 2016) * 1e-2)
+
 
 def parse():
 	paperID = None
@@ -48,7 +52,7 @@ def parse():
 
 	newpaperID = int('400000000000000000000000', 16)
 
-	with open("data/dblp.txt", "r") as f:
+	with open("../data/dblp.txt", "r") as f:
 		for line in f:
 			line = line[:-1]
 			if line.startswith('#*'):
@@ -93,11 +97,11 @@ def parse():
 				papers.append(Paper(paperID, title, year, "Paper"))
 
 				if conference != None and conference != "CoRR":
-					publishat.append(PublishAt(paperID, conference, "PublishAt"))
+					publishat.append(PublishAt(paperID, weight(year), conference, "PublishAt"))
 
 				if authors != None:
 					for author in authors:
-						authorof.append(AuthorOf(author, paperID, "AuthorOf"))
+						authorof.append(AuthorOf(author, weight(year), paperID, "AuthorOf"))
 
 				title = None
 				year = None
@@ -116,7 +120,7 @@ def parse():
 
 	for (paperID, citeID) in reference_buffer:
 		if paperID not in dict_badpaper and citeID not in dict_badpaper:
-			reference.append(Reference(paperID, citeID, "Reference"))
+			reference.append(Reference(paperID, 0.9, citeID, "Reference"))
 
 
 '''
@@ -125,22 +129,22 @@ Do not change orders, node should be inserted before inserting edges
 '''
 def to_csv():
 	df = pd.DataFrame(papers, columns = ["paperID:ID", "title", "year:INT", ":LABEL"])
-	df.to_csv("data/Paper.csv", index = False, encoding = 'utf-8')
+	df.to_csv("../data/Paper.csv", index = False, encoding = 'utf-8')
 
 	df = pd.DataFrame(researchers, columns = ["name:ID", ":LABEL"])
-	df.to_csv("data/Researcher.csv", index = False, encoding = 'utf-8')
+	df.to_csv("../data/Researcher.csv", index = False, encoding = 'utf-8')
 
 	df = pd.DataFrame(conferences, columns = ["conference:ID", ":LABEL"])
-	df.to_csv("data/Conference.csv", index = False, encoding = 'utf-8')
+	df.to_csv("../data/Conference.csv", index = False, encoding = 'utf-8')
 
-	df = pd.DataFrame(authorof, columns = [":START_ID", ":END_ID", ":TYPE"])
-	df.to_csv("data/AuthorOf.csv", index = False, encoding = 'utf-8')
+	df = pd.DataFrame(authorof, columns = [":START_ID", "weight:FLOAT", ":END_ID", ":TYPE"])
+	df.to_csv("../data/AuthorOf.csv", index = False, encoding = 'utf-8')
 
-	df = pd.DataFrame(publishat, columns = [":START_ID", ":END_ID", ":TYPE"])
-	df.to_csv("data/PublishAt.csv", index = False, encoding = 'utf-8')
+	df = pd.DataFrame(publishat, columns = [":START_ID", "weight:FLOAT", ":END_ID", ":TYPE"])
+	df.to_csv("../data/PublishAt.csv", index = False, encoding = 'utf-8')
 
-	df = pd.DataFrame(reference, columns = [":START_ID", ":END_ID", ":TYPE"])
-	df.to_csv("data/Reference.csv", index = False, encoding = 'utf-8')
+	df = pd.DataFrame(reference, columns = [":START_ID", "weight:FLOAT", ":END_ID", ":TYPE"])
+	df.to_csv("../data/Reference.csv", index = False, encoding = 'utf-8')
 
 
 parse()
