@@ -92,16 +92,18 @@ class ResearcherToPaper(Recommender):
 
 
 class ResearcherToResearcher(Recommender):
-	def __init__(self, session, G):
+	def __init__(self, session, G, nx_G):
 		Recommender.__init__(self, session)
 		self.G = G
+		self.nx_G = nx_G
 
 	def getStart(self, input):
 		return self.getResearcherByName(input)
 
 	def generateCandidates(self):
 		vec = self.getCandidateVec()
-		return list(self.session.run("match (r1:Researcher)-[*1..4]-(r2:Researcher) where ID(r1) = %d and exists(r2.%s) and not ID(r1) = ID(r2) return distinct(ID(r2)) as ID, r2.name as name, r2.pagerank as pagerank, r2.%s as %s" % (self.startID, vec, vec, vec)))
+		candidates = list(self.session.run("match (r1:Researcher)-[*1..4]-(r2:Researcher) where ID(r1) = %d and exists(r2.%s) and not ID(r1) = ID(r2) return distinct(ID(r2)) as ID, r2.name as name, r2.pagerank as pagerank, r2.%s as %s" % (self.startID, vec, vec, vec)))
+		return [candidate for candidate in candidates if self.nx_G.degree(candidate["ID"]) >= 16]
 
 	def getProperty(self, candidate):
 		return (candidate["name"], candidate["pagerank"])
@@ -129,7 +131,7 @@ class ResearcherToResearcher(Recommender):
 
 		query_vertices = self.G.vs(name_in=[str(candidate["ID"]) for candidate in candidates])
 
-		rank = self.G.personalized_pagerank(vertices=[v.index for v in query_vertices], directed=False, damping=0.8, reset_vertices=self.G.vs(name_eq=str(self.startID)), weights='weight', implementation='arpack')
+		rank = self.G.personalized_pagerank(vertices=[v.index for v in query_vertices], directed=False, damping=0.9, reset_vertices=self.G.vs(name_eq=str(self.startID)), weights='weight', implementation='arpack')
 		candidateList = [self.getFormat(candidates[dict_idx[query_vertices[i]['name']]], rank[i]) for i in xrange(len(candidates))]
 		candidateList.sort(key=lambda c: c["score"], reverse=True)
 

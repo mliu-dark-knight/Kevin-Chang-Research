@@ -1,6 +1,7 @@
 import json
 import copy
 import numpy as np
+import networkx as nx
 from igraph import *
 from flask import Flask, request
 from flask_restful import reqparse, abort, Api, Resource
@@ -62,6 +63,16 @@ class PublicationHistory(Base):
 		except:
 			raise ValueError("%s does not exist or does not have associated papers" % node)
 		return json.dumps([{'title': result['title'], 'year': result['year'], 'pagerank': result['pagerank'], 'score': result['weight']} for result in results])
+
+
+class MatchPhrases(Base):
+	def __init__(self):
+		Base.__init__(self, ['name1', 'name2'])
+
+	def get(self):
+		args = self.parser.parse_args()
+		return None
+
 
 
 class CompareEmbedding(Base):
@@ -207,23 +218,23 @@ class fullpprRecommendRtoR(RecommendRtoR, rankBasedRecommender):
 
 class node2vecRecommendRtoR(RecommendRtoR, embeddingBasedRecommender):
 	def getRecommender(self):
-		return node2vecResearcherToResearcher(session, G)
+		return node2vecResearcherToResearcher(session, G, nx_G)
 
 class doc2vecRecommendRtoR(RecommendRtoR, embeddingBasedRecommender):
 	def getRecommender(self):
-		return doc2vecResearcherToResearcher(session, G)
+		return doc2vecResearcherToResearcher(session, G, nx_G)
 
 class fastppvRecommendRtoR(RecommendRtoR, embeddingBasedRecommender):
 	def getRecommender(self):
-		return fastppvResearcherToResearcher(session, G)
+		return fastppvResearcherToResearcher(session, G, nx_G)
 
 class LDARecommendRtoR(RecommendRtoR, embeddingBasedRecommender):
 	def getRecommender(self):
-		return LDAResearcherToResearcher(session, G)
+		return LDAResearcherToResearcher(session, G, nx_G)
 
 class jointRecommendRtoR(RecommendRtoR, embeddingBasedRecommender):
 	def getRecommender(self):
-		return jointResearcherToResearcher(session, G)
+		return jointResearcherToResearcher(session, G, nx_G)
 
 
 
@@ -288,11 +299,12 @@ class jointRecommendPtoP(RecommendPtoP, embeddingBasedRecommender):
 
 
 # Actually setup the Api resource routing here
-driver = GraphDatabase.driver("bolt://localhost", auth = basic_auth("neo4j", "mliu60"))
+driver = GraphDatabase.driver("bolt://localhost", auth=basic_auth("neo4j", "mliu60"))
 session = driver.session()
 
 # load graph and initialized personalization
 G = Graph.Read_Ncol('../../data/karate.edgelist', names = True, directed = False)
+nx_G = nx.read_edgelist('../../data/karate.edgelist', nodetype=int, data=(('weight',float),), create_using=nx.Graph())
 
 allApi = {'/BasicInfo': BasicInfo, 
 		  '/PublicationHistory': PublicationHistory, 
