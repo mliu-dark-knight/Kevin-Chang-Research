@@ -10,6 +10,7 @@ from scipy.spatial.distance import cityblock, euclidean, cosine
 from abc import ABCMeta, abstractmethod
 from personalized_pagerank import fullpprPaperToResearcher, fullpprResearcherToResearcher, fullpprResearcherToPaper, fullpprPaperToPaper
 from embedding import *
+from support import *
 
 app = Flask(__name__)
 api = Api(app)
@@ -63,16 +64,6 @@ class PublicationHistory(Base):
 		except:
 			raise ValueError("%s does not exist or does not have associated papers" % node)
 		return json.dumps([{'title': result['title'], 'year': result['year'], 'pagerank': result['pagerank'], 'score': result['weight']} for result in results])
-
-
-class RecommendationSupport(Base):
-	def __init__(self):
-		Base.__init__(self, ['name1', 'name2'])
-
-	def get(self):
-		args = self.parser.parse_args()
-		return None
-
 
 
 class CompareEmbedding(Base):
@@ -131,7 +122,7 @@ class CompareJoint(CompareEmbedding):
 
 
 
-class Recommender(Resource):
+class Recommender(Base):
 	@abstractmethod
 	def getKey(self, args):
 		pass
@@ -147,10 +138,7 @@ class Recommender(Resource):
 
 class rankBasedRecommender(Recommender):
 	def __init__(self):
-		super(Recommender, self).__init__()
-		self.parser = copy.deepcopy(parser)
-		for arg in ['name', 'title', 'conference', 'limit']:
-			self.parser.add_argument(arg)
+		Recommender.__init__(self, ['name', 'title', 'conference', 'limit'])
 
 	def get(self):
 		args = self.parser.parse_args()
@@ -162,10 +150,7 @@ class rankBasedRecommender(Recommender):
 
 class embeddingBasedRecommender(Recommender):
 	def __init__(self):
-		super(Recommender, self).__init__()
-		self.parser = copy.deepcopy(parser)
-		for arg in ['name', 'title', 'conference', 'limit', 'rank_criterion']:
-			self.parser.add_argument(arg)
+		Recommender.__init__(self, ['name', 'title', 'conference', 'limit', 'rank_criterion'])
 
 	def get(self):
 		args = self.parser.parse_args()
@@ -298,6 +283,22 @@ class jointRecommendPtoP(RecommendPtoP, embeddingBasedRecommender):
 
 
 
+
+class Support(Base):
+	def __init__(self):
+		Base.__init__(self, ['name1', 'name2', 'limit'])
+
+	def get(self):
+		args = self.parser.parse_args()
+		supporter = self.getSupporter()
+		return json.dumps(supporter.support(args['name1'], args['name2'], int(args['limit'])))
+
+class jointSupport(Support):
+	def getSupporter(self):
+		return jointSupporter(session)
+
+
+
 # Actually setup the Api resource routing here
 driver = GraphDatabase.driver("bolt://localhost", auth=basic_auth("neo4j", "mliu60"))
 session = driver.session()
@@ -336,7 +337,8 @@ allApi = {'/BasicInfo': BasicInfo,
 		  '/jointRecommend/PtoR': jointRecommendPtoR,
 		  '/jointRecommend/RtoR': jointRecommendRtoR,
 		  '/jointRecommend/RtoP': jointRecommendRtoP,
-		  '/jointRecommend/PtoP': jointRecommendPtoP
+		  '/jointRecommend/PtoP': jointRecommendPtoP,
+		  '/jointSupport': jointSupport
 		 }
 for k, v in allApi.iteritems():
 	api.add_resource(v, k)
