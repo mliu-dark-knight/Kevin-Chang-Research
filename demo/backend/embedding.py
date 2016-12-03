@@ -102,7 +102,7 @@ class ResearcherToResearcher(Recommender):
 
 	def generateCandidates(self):
 		vec = self.getCandidateVec()
-		candidates = list(self.session.run("match (r1:Researcher)-[*1..4]-(r2:Researcher) where ID(r1) = %d and exists(r2.%s) and not ID(r1) = ID(r2) return distinct(ID(r2)) as ID, r2.name as name, r2.pagerank as pagerank, r2.%s as %s" % (self.startID, vec, vec, vec)))
+		candidates = list(self.session.run("match (r1:Researcher)-[*1..4]-(r2:Researcher) where not (r1)--()--(r2) and ID(r1) = %d and exists(r2.%s) and not ID(r1) = ID(r2) return distinct(ID(r2)) as ID, r2.name as name, r2.pagerank as pagerank, r2.%s as %s" % (self.startID, vec, vec, vec)))
 		return [candidate for candidate in candidates if self.nx_G.degree(candidate["ID"]) >= 16]
 
 	def getProperty(self, candidate):
@@ -123,7 +123,7 @@ class ResearcherToResearcher(Recommender):
 			candidateList.sort(key=lambda c: c["score"], reverse=True)
 		else:
 			candidateList.sort(key=lambda c: c["score"], reverse=False)
-		candidates = candidateList[: len(candidateList) / 100]
+		candidates = candidateList[: len(candidateList) * 1e-2]
 
 		dict_idx = {}
 		for i in xrange(len(candidates)):

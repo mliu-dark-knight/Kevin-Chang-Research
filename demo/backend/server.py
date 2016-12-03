@@ -65,7 +65,7 @@ class PublicationHistory(Base):
 		return json.dumps([{'title': result['title'], 'year': result['year'], 'pagerank': result['pagerank'], 'score': result['weight']} for result in results])
 
 
-class MatchPhrases(Base):
+class RecommendationSupport(Base):
 	def __init__(self):
 		Base.__init__(self, ['name1', 'name2'])
 
