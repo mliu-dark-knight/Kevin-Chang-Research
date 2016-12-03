@@ -123,7 +123,7 @@ class ResearcherToResearcher(Recommender):
 			candidateList.sort(key=lambda c: c["score"], reverse=True)
 		else:
 			candidateList.sort(key=lambda c: c["score"], reverse=False)
-		candidates = candidateList[: len(candidateList) * 1e-2]
+		candidates = candidateList[: len(candidateList) / 100]
 
 		dict_idx = {}
 		for i in xrange(len(candidates)):
